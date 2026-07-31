@@ -1,0 +1,33 @@
+{
+  "format_version": 1,
+  "_schema": {
+    "_placeholders": {
+      "value": true,
+      "since": "2026-07-31",
+      "note": "All market_id values below are placeholders (they contain 'example' or 'PLACEHOLDER'). The rebalance-index script refuses to place orders against a catalog with `_placeholders: true`. Replace each placeholder market_id with one copied from a real portfolio snapshot, then flip `_placeholders.value` to `false`."
+    }
+  },
+  "tier_needed_for_orders": "realtime (ADJACENT_API_KEY set) + per-exchange API keys set (e.g. KALSHI_API_KEY + KALSHI_RSA_KEY_PATH for the `kalshi` adapter)",
+  "indices": {
+    "example-index": {
+      "category": "<theme>",
+      "display_name": "<Adjacent Direct Index: <theme>>",
+      "budget_usd": 100,
+      "rebalance_cron_local_hour_et": 16,
+      "rebalance_days": ["mon", "tue", "wed", "thu", "fri"],
+      "exchange": "kalshi",
+      "constituents": [
+        { "market_id": "example:INDEX-A", "platform": "kalshi", "side": "yes", "target_weight": 0.20 },
+        { "market_id": "example:INDEX-B", "platform": "kalshi", "side": "yes", "target_weight": 0.20 },
+        { "market_id": "example:INDEX-C", "platform": "kalshi", "side": "yes", "target_weight": 0.20 },
+        { "market_id": "example:INDEX-D", "platform": "kalshi", "side": "yes", "target_weight": 0.20 },
+        { "market_id": "example:INDEX-E", "platform": "kalshi", "side": "yes", "target_weight": 0.20 }
+      ]
+    }
+  },
+  "totals_check": {
+    "expected_constituent_count": 5,
+    "expected_total_weight": 1.0,
+    "expected_budget_usd": 100
+  }
+}

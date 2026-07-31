@@ -1,0 +1,40 @@
+{
+  "name": "adjacent",
+  "version": "0.2.0",
+  "description": "Adjacent prediction-market tools - skills, commands, hooks, agents, MCP servers.",
+  "author": {
+    "name": "Lucas Kohorst",
+    "email": "lucas@adjacentresearch.xyz"
+  },
+  "homepage": "https://adjacentresearch.xyz",
+  "repository": "https://github.com/adjacentresearchxyz/adjacent-plugin",
+  "license": "MIT",
+  "keywords": [
+    "prediction-markets",
+    "adjacent",
+    "mcp",
+    "datawrapper",
+    "direct-index",
+    "exchange"
+  ],
+  "mcpServers": "mcp.json",
+  "hooks": [
+    {
+      "event": "PreToolUse",
+      "match": { "tool_name": ["Bash", "Write", "Edit", "MultiEdit"] },
+      "script": "hooks/pre-tool-use/conventions.py"
+    },
+    {
+      "event": "PreToolUse",
+      "match": { "tool_name": ["Bash"] },
+      "script": "hooks/pre-tool-use/secret-redactor.py"
+    },
+    {
+      "event": "PostToolUse",
+      "match": {
+        "tool_name": ["mcp__adjacent_markets__price", "mcp__adjacent_markets_dev__price"]
+      },
+      "script": "hooks/post-tool-use/mover-logger.py"
+    }
+  ]
+}

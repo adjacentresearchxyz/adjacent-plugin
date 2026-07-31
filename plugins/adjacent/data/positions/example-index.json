@@ -1,0 +1,9 @@
+{
+  "format_version": 1,
+  "_schema_ref": "fields_per_position and producers are documented in AGENTS.md section 'Position file schema'.",
+  "index": "example-index",
+  "exchange": "kalshi",
+  "positions": [],
+  "last_fill_ts": null,
+  "as_of": null
+}

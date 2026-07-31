@@ -1,0 +1,19 @@
+{
+  "watchlist": [],
+  "thresholds": {
+    "1d_pct": 1.5,
+    "7d_pct": 4.0,
+    "30d_pct": 8.0
+  },
+  "sources_for_news_correlation": [
+    "Financial Times",
+    "Wall Street Journal",
+    "Reuters",
+    "Bloomberg",
+    "Associated Press"
+  ],
+  "_schema": {
+    "kind": "watchlist",
+    "purpose": "Slugs the /briefing/morning and /data/index-movers commands iterate over. Shipped empty by design - the plugin does NOT bake in any specific Adjacent index slug. The user populates this array after running mcp__adjacent_markets_dev__list(type=index) and confirming the slugs they want followed. briefing-writer / index-monitor must prompt before persisting on first run."
+  }
+}

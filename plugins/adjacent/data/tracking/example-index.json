@@ -1,0 +1,64 @@
+{
+  "format_version": 1,
+  "_schema_ref": "Row fields are produced by scripts/tracking-index.py: market_id, size, mid, cost_basis, notional, weight_pct, pnl_pct_mid, fill_queue_pct. Reads from data/positions/<slug>.json and emits this file after each weekday 16:00 ET cycle. Weight pct may not sum to exactly 100 due to rounding; notional is the per-row absolute cash at the current mid.",
+  "index": "example-index",
+  "as_of": "2026-07-31T16:00:00-04:00",
+  "rows": [
+    {
+      "market_id": "example:INDEX-A",
+      "size": 25,
+      "mid": 0.4200,
+      "cost_basis": 0.4050,
+      "notional": 10.50,
+      "weight_pct": 21.4286,
+      "pnl_pct_mid": 3.7037,
+      "fill_queue_pct": 0.15
+    },
+    {
+      "market_id": "example:INDEX-B",
+      "size": 22,
+      "mid": 0.6400,
+      "cost_basis": 0.6500,
+      "notional": 14.08,
+      "weight_pct": 28.7347,
+      "pnl_pct_mid": -1.5385,
+      "fill_queue_pct": 0.05
+    },
+    {
+      "market_id": "example:INDEX-C",
+      "size": 18,
+      "mid": 0.1800,
+      "cost_basis": 0.1700,
+      "notional": 3.24,
+      "weight_pct": 6.6122,
+      "pnl_pct_mid": 5.8824,
+      "fill_queue_pct": 0.21
+    },
+    {
+      "market_id": "example:INDEX-D",
+      "size": 24,
+      "mid": 0.5500,
+      "cost_basis": 0.5450,
+      "notional": 13.20,
+      "weight_pct": 26.9388,
+      "pnl_pct_mid": 0.9174,
+      "fill_queue_pct": 0.0
+    },
+    {
+      "market_id": "example:INDEX-E",
+      "size": 11,
+      "mid": 0.7100,
+      "cost_basis": 0.7300,
+      "notional": 7.81,
+      "weight_pct": 15.9398,
+      "pnl_pct_mid": -2.7397,
+      "fill_queue_pct": 0.12
+    }
+  ],
+  "_totals": {
+    "total_notional": 48.83,
+    "row_count": 5,
+    "weight_pct_sum": 99.6541,
+    "note": "Notional sums exactly; weight_pct sum rounds under 100 because per-row weights are truncated at 4 decimals. fill_queue_pct is the absolute mid-vs-fill deviation in %."
+  }
+}

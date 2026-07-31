@@ -1,0 +1,31 @@
+# secrets - never commit any of these
+.env
+*.key
+*.pem
+*.p12
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# node (kept out of this repo by design - the install path is /plugin install)
+node_modules/
+
+# logs and reports
+*.log
+charts/*.bak
+state/
+.cache/
+
+# runtime-generated per-index data (produced by scripts on each rebalance)
+# keep the seeded positions/*.json and the catalog in git, exclude these:
+data/tracking/
+data/positions/*.last_fill_ts
+data/positions/*.series.json
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/
