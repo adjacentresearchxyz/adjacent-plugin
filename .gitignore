@@ -20,11 +20,12 @@ state/
 .cache/
 
 # runtime-generated per-index data (produced by scripts on each rebalance)
-# keep the seeded positions/*.json and the catalog in git, exclude these:
-data/tracking/
-data/positions/*.last_fill_ts
-data/positions/*.series.json
-
+# catalog and seeded positions stay committed; only dynamic outputs are ignored:
+plugins/adjacent/data/tracking/*
+!plugins/adjacent/data/tracking/example-index.json
+!plugins/adjacent/data/tracking/.gitkeep
+plugins/adjacent/data/positions/*.last_fill_ts
+plugins/adjacent/data/positions/*.series.json
 # editor / OS
 .DS_Store
 .idea/
