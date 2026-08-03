@@ -10,11 +10,14 @@ derived from, in priority order:
 
 1. explicit `mid`
 2. midpoint of `bid` / `ask`
-3. midpoint of Kalshi dollar fields (`yes_bid_dollars` / `yes_ask_dollars`
-   or the no-side pair)
-4. explicit mid-derived `close` / `close_dollars`
+3. midpoint of the Kalshi yes-side dollar pair (`yes_bid_dollars` /
+   `yes_ask_dollars`)
+4. midpoint of the no-side dollar pair, inverted to the yes side
+5. explicit mid-derived `close`, `close_dollars`, `yes_close_dollars`,
+   or `price`
 
-Timestamps accept `ts`, `timestamp`, `end_period_ts`, or `end_ts`.
+Timestamps accept `ts`, `timestamp`, `end_period_ts`, `end_ts`,
+`start_ts`, or `start_period_ts`, in that order.
 """
 
 from __future__ import annotations

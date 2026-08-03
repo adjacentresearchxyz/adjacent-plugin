@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""tracking-index.py - produce a per-row tracking-error table for any index.
+"""tracking-index.py - produce a per-position mid-based table for any index.
 
 Reads data/positions/<slug>.json and emits data/tracking/<slug>.json.
 Each row reports position size, mid, cost basis, current notional,
-%-weight in the portfolio, today's mid-based move (P&L), and the
+%-weight in the portfolio, mid-based return against cost basis, and the
 queued fill deviation.
 
-Tracking = (mid_portfolio_return - mid_index_return) in %.
+Scope: this is the per-position leg of the tracking report, not the
+tracking error itself. Tracking error is
+(mid_portfolio_return - mid_index_return) in %, which needs an index
+reference series; position documents carry no index series, so it is
+computed downstream from these rows plus a chart series (see
+scripts/chart-index.py). Do not read `pnl_pct_mid` as tracking error.
 """
 
 from __future__ import annotations
@@ -27,7 +32,10 @@ def main() -> int:
     pos_path = root / "positions" / f"{args.index}.json"
     if not pos_path.exists():
         raise SystemExit(f"error: missing positions file {pos_path}")
-    doc = json.loads(pos_path.read_text(encoding="utf-8"))
+    try:
+        doc = json.loads(pos_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"error: {pos_path} is not valid JSON: {exc}")
     positions = doc.get("positions", []) or []
     total_notional = sum(abs(p.get("notional", 0)) for p in positions)
     rows = []

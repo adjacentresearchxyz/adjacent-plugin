@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """rebalance-index.py - place exchange orders from a compact plan, for any index.
 
-Reads a compact plan via stdin, --plan <path>, or builds one from the
-catalog if the host pipes it in. The plan shape is documented in the
-adjacent-direct-index and <exchange>-direct-indexing skills:
+Reads a compact plan via --plan <path> or stdin; the plan is always
+supplied by the caller, never derived from the catalog. The plan shape
+is documented in the adjacent-direct-index and <exchange>-direct-indexing
+skills:
 
     {
       "index": "<slug>",

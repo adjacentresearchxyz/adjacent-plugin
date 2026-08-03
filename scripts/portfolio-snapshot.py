@@ -17,15 +17,20 @@ from zoneinfo import ZoneInfo
 from _paths import data_dir
 
 
-POSITIONS_DIR = data_dir() / "positions"
 ET = ZoneInfo("America/New_York")
+
+
+def positions_dir():
+    """Resolved per call so ADJACENT_DATA_DIR applies after import."""
+    return data_dir() / "positions"
 
 
 def load_all() -> dict[str, dict]:
     out: dict[str, dict] = {}
-    if not POSITIONS_DIR.exists():
+    root = positions_dir()
+    if not root.exists():
         return out
-    for p in sorted(POSITIONS_DIR.glob("*.json")):
+    for p in sorted(root.glob("*.json")):
         if p.stem.endswith(".series"):
             continue
         try:
@@ -37,7 +42,7 @@ def load_all() -> dict[str, dict]:
 
 
 def load_index(index: str) -> dict[str, dict]:
-    path = POSITIONS_DIR / f"{index}.json"
+    path = positions_dir() / f"{index}.json"
     try:
         return {index: json.loads(path.read_text(encoding="utf-8"))}
     except (FileNotFoundError, json.JSONDecodeError):
@@ -79,7 +84,8 @@ def main() -> int:
                 if mid is not None and cost:
                     pnl_pct = (mid - cost) / cost
                     print(
-                        f"  - {p['market_id']}: size {p['size']} mid {mid:.4f} "
+                        f"  - {p.get('market_id', 'unknown')}: "
+                        f"size {p.get('size', 0)} mid {mid:.4f} "
                         f"pnl {pnl_pct*100:+.2f}% mid-quote"
                     )
     print(f"last sync: {now_et_str()}")

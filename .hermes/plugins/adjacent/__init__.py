@@ -31,6 +31,7 @@ BUNDLED_SKILLS: dict[str, str] = {
     "adjacent-news-correlation": "adjacent-news-correlation/SKILL.md",
     "adjacent-direct-index": "adjacent-direct-index/SKILL.md",
     "adjacent-chart-style": "adjacent-chart-style/SKILL.md",
+    "adjacent-workflows": "adjacent-workflows/SKILL.md",
     "briefings": "briefings/SKILL.md",
     "kalshi-api": "kalshi-api/SKILL.md",
     "kalshi-direct-indexing": "kalshi-direct-indexing/SKILL.md",
@@ -86,6 +87,10 @@ _HELP_TEXT = (
 )
 
 
+_TRUE_TOKENS = {"true", "1", "yes", "on"}
+_FALSE_TOKENS = {"false", "0", "no", "off"}
+
+
 def _parse_command_args(tokens: list[str]) -> dict[str, Any]:
     """Parse a list of `--flag value` tokens into a dict. A flag with no
     following value defaults to True (boolean). This is pure Python
@@ -106,6 +111,51 @@ def _parse_command_args(tokens: list[str]) -> dict[str, Any]:
         else:
             i += 1
     return args
+
+
+def _coerce_params(workflow: str, params: dict[str, Any]) -> dict[str, Any]:
+    """Cast command-line strings to the JSON types the schema declares.
+
+    Command tokens always arrive as strings, but the handler-side
+    validator in tools.py type-checks against the `parameters` schema,
+    so an uncoerced `--sigma 2.5` is rejected as "expected number, got
+    str". A value that cannot be cast is passed through untouched so
+    the validator reports the mismatch instead of this function
+    swallowing it.
+    """
+    entry = _tools.ALLOWED_WORKFLOWS.get(workflow)
+    if entry is None:
+        return params
+    parameters = _schemas.TOOL_SCHEMAS[entry[0]].get("parameters", {})
+    properties = parameters.get("properties", {}) or {}
+    coerced: dict[str, Any] = {}
+    for key, value in params.items():
+        declared = (properties.get(key) or {}).get("type")
+        coerced[key] = _coerce_one(declared, value)
+    return coerced
+
+
+def _coerce_one(declared: str | None, value: Any) -> Any:
+    if not isinstance(value, str):
+        return value
+    if declared == "boolean":
+        lowered = value.strip().lower()
+        if lowered in _TRUE_TOKENS:
+            return True
+        if lowered in _FALSE_TOKENS:
+            return False
+        return value
+    if declared == "integer":
+        try:
+            return int(value.strip())
+        except ValueError:
+            return value
+    if declared == "number":
+        try:
+            return float(value.strip())
+        except ValueError:
+            return value
+    return value
 
 
 def adjacent_command_handler(raw_args: str) -> str:
@@ -136,7 +186,7 @@ def adjacent_command_handler(raw_args: str) -> str:
             + ", ".join(sorted(_WORKFLOW_TOOLS))
             + "\n"
         )
-    params = _parse_command_args(tokens[2:])
+    params = _coerce_params(name, _parse_command_args(tokens[2:]))
     # Tool handlers follow def handler(args: dict, **kwargs) -> str.
     return handler(params)
 

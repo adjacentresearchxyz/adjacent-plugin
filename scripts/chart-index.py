@@ -20,15 +20,24 @@ import sys
 from _paths import data_dir
 
 
-POSITIONS_DIR = data_dir() / "positions"
+def positions_dir():
+    """Resolved per call so ADJACENT_DATA_DIR applies after import."""
+    return data_dir() / "positions"
 
 
 def load_series(name: str) -> list[tuple[str, float]]:
-    cache = POSITIONS_DIR / f"{name}.series.json"
+    cache = positions_dir() / f"{name}.series.json"
     if not cache.exists():
         return []
     doc = json.loads(cache.read_text(encoding="utf-8"))
     return [(row["ts"], row["value"]) for row in doc.get("series", [])]
+
+
+def fmt_value(value: float | None) -> str:
+    """Format a series value, leaving the cell blank when a series has no
+    point at this timestamp. The two series are rebased independently and
+    rarely share an identical timestamp set, so gaps are the norm."""
+    return "" if value is None else f"{value:.4f}"
 
 
 def rebase(series: list[tuple[str, float]], anchor: str) -> list[tuple[str, float]]:
@@ -48,7 +57,7 @@ def main() -> int:
     ap.add_argument("--index", required=True)
     ap.add_argument("--output", help="write CSV to this path instead of stdout")
     args = ap.parse_args()
-    fill_ts_path = POSITIONS_DIR / f"{args.index}.last_fill_ts"
+    fill_ts_path = positions_dir() / f"{args.index}.last_fill_ts"
     if not fill_ts_path.exists():
         raise SystemExit(
             f"error: missing {fill_ts_path}; run scripts/rebalance-index.py "
@@ -71,8 +80,8 @@ def main() -> int:
             w.writerow(
                 {
                     "ts": ts,
-                    "index": f"{row.get('index', ''):.4f}",
-                    "portfolio": f"{row.get('portfolio', ''):.4f}",
+                    "index": fmt_value(row.get("index")),
+                    "portfolio": fmt_value(row.get("portfolio")),
                 }
             )
     finally:
