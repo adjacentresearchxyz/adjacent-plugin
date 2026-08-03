@@ -9,14 +9,16 @@ import json
 from _paths import data_dir
 
 
-CAPABILITIES = data_dir() / "capabilities.json"
+def capabilities_path():
+    """Resolved per call so ADJACENT_DATA_DIR applies after import."""
+    return data_dir() / "capabilities.json"
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
-    payload = json.loads(CAPABILITIES.read_text(encoding="utf-8"))
+    payload = json.loads(capabilities_path().read_text(encoding="utf-8"))
     if args.json:
         print(json.dumps(payload, indent=2))
         return 0

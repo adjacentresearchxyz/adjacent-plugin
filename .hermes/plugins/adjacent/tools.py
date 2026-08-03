@@ -335,6 +335,8 @@ def _validate(schema: dict, params: dict[str, Any]) -> list[str]:
             ok = isinstance(val, str)
             if ok and "minLength" in spec and len(val) < spec["minLength"]:
                 errors.append(f"{key}: shorter than minLength {spec['minLength']}")
+            if ok and "maxLength" in spec and len(val) > spec["maxLength"]:
+                errors.append(f"{key}: longer than maxLength {spec['maxLength']}")
             if ok and "pattern" in spec:
                 import re
 

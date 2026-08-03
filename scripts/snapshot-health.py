@@ -28,16 +28,14 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 from _http import get_with_headers
+from _timeparse import parse_timestamp
 
 
 DEFAULT_MAX_AGE_MINUTES = 60
 
 
-def parse_ts(value: str) -> datetime:
-    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed
+def parse_ts(value: object) -> datetime:
+    return parse_timestamp(value)
 
 
 def _as_of_from_headers(headers: dict[str, str]) -> str | None:
@@ -87,8 +85,24 @@ def evaluate(snapshots: list[dict], now: datetime) -> dict:
             row["detail"] = "missing as_of"
             rows.append(row)
             continue
-        max_age = float(snapshot.get("max_age_minutes", DEFAULT_MAX_AGE_MINUTES))
-        age_minutes = (now - parse_ts(str(as_of))).total_seconds() / 60
+        # A feed is graded, never fatal: an unparseable timestamp or max
+        # age is reported as an error row like any other bad snapshot.
+        try:
+            max_age = float(snapshot.get("max_age_minutes", DEFAULT_MAX_AGE_MINUTES))
+        except (TypeError, ValueError):
+            row["status"] = "error"
+            row["detail"] = f"invalid max_age_minutes: {snapshot.get('max_age_minutes')!r}"
+            rows.append(row)
+            continue
+        try:
+            parsed_as_of = parse_ts(as_of)
+        except ValueError as exc:
+            row["status"] = "error"
+            row["detail"] = str(exc)
+            row["as_of"] = str(as_of)
+            rows.append(row)
+            continue
+        age_minutes = (now - parsed_as_of).total_seconds() / 60
         row["age_minutes"] = round(age_minutes, 2)
         row["as_of"] = str(as_of)
         row["status"] = "fresh" if age_minutes <= max_age else "stale"

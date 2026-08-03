@@ -27,17 +27,13 @@ CODEX_AGENTS = {
     "briefing-writer",
     "ask-assistant",
 }
-SHARED_SKILLS = {
-    "adjacent-chart-style",
-    "adjacent-data-surfaces",
-    "adjacent-direct-index",
-    "adjacent-markets",
-    "adjacent-news-correlation",
-    "adjacent-index-movers",
-    "briefings",
-    "datawrapper-tables",
-    "kalshi-api",
-    "kalshi-direct-indexing",
+# Skills that legitimately ship in one package only, with the reason.
+# Everything else must exist in both packages and be byte-identical;
+# the shared set is derived from the directories rather than listed, so
+# a new skill added to one package cannot silently escape the check.
+HOST_SPECIFIC_SKILLS = {
+    "hermes": "documents this host's own runtime; the name is a foreign "
+    "platform reference in the other package",
 }
 PACKAGES = {
     ".claude-plugin": {"hermes", "codex", "cursor", "openclaw"},
@@ -165,13 +161,36 @@ def assert_openclaw_contract() -> None:
             fail(f"OpenClaw MCP server {name} does not use the shared endpoint")
 
 
+def _skill_names(root: Path) -> set[str]:
+    if not root.is_dir():
+        fail(f"skills directory does not exist: {root.relative_to(ROOT)}")
+    return {child.name for child in root.iterdir() if child.is_dir()}
+
+
 def assert_skill_parity() -> None:
     canonical = ROOT / "plugins/adjacent/skills"
-    hermes = ROOT / ".hermes/plugins/adjacent/skills"
-    for name in SHARED_SKILLS:
+    other = ROOT / ".hermes/plugins/adjacent/skills"
+    canonical_names = _skill_names(canonical)
+    other_names = _skill_names(other)
+
+    for name in sorted(canonical_names.symmetric_difference(other_names)):
+        if name in HOST_SPECIFIC_SKILLS:
+            continue
+        present, absent = (
+            ("plugins/adjacent", ".hermes") if name in canonical_names else (".hermes", "plugins/adjacent")
+        )
+        fail(
+            f"skill {name!r} ships in {present} but not {absent}; add it to both "
+            f"or record it in HOST_SPECIFIC_SKILLS with a reason"
+        )
+
+    for name in sorted(canonical_names & other_names):
         canonical_path = canonical / name / "SKILL.md"
-        hermes_path = hermes / name / "SKILL.md"
-        if canonical_path.read_bytes() != hermes_path.read_bytes():
+        other_path = other / name / "SKILL.md"
+        for path in (canonical_path, other_path):
+            if not path.is_file():
+                fail(f"skill {name!r} is missing {path.relative_to(ROOT)}")
+        if canonical_path.read_bytes() != other_path.read_bytes():
             fail(f"Shared skill has drifted between packages: {name}")
 
 

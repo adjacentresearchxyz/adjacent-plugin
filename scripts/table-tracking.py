@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""table-tracking.py - build a per-index tracking-error table CSV.
+"""table-tracking.py - build a per-position table CSV for an index.
 
 Reads tracking/<slug>.json (produced by scripts/tracking-index.py) and
-emits a CSV suitable for Datawrapper publish:
+emits a CSV suitable for Datawrapper publish. Carries the same
+per-position columns as its source, so the tracking-error caveat in
+scripts/tracking-index.py applies here too:
 
   market_id,size,notional,weight_pct,pnl_pct_mid,fill_queue_pct
 
@@ -19,7 +21,9 @@ import sys
 from _paths import data_dir
 
 
-TRACKING_DIR = data_dir() / "tracking"
+def tracking_dir():
+    """Resolved per call so ADJACENT_DATA_DIR applies after import."""
+    return data_dir() / "tracking"
 
 
 def main() -> int:
@@ -27,7 +31,7 @@ def main() -> int:
     ap.add_argument("--index", required=True)
     ap.add_argument("--output", help="write CSV to this path instead of stdout")
     args = ap.parse_args()
-    src = TRACKING_DIR / f"{args.index}.json"
+    src = tracking_dir() / f"{args.index}.json"
     if not src.exists():
         raise SystemExit(f"error: missing tracking source {src}; run scripts/tracking-index.py first")
     doc = json.loads(src.read_text(encoding="utf-8"))

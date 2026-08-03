@@ -12,6 +12,7 @@ These tests enforce the documented Hermes plugin API contract:
 from __future__ import annotations
 
 import inspect
+import json
 from pathlib import Path
 
 import adjacent  # noqa: E402
@@ -24,7 +25,7 @@ def _plugin_dir() -> Path:
 def test_register_full(fake_ctx):
     adjacent.register(fake_ctx)
     assert set(fake_ctx.tools) == set(adjacent.tools.TOOL_HANDLERS)
-    assert len(fake_ctx.skills) == 11
+    assert set(fake_ctx.skills) == set(adjacent.BUNDLED_SKILLS)
     assert fake_ctx.hooks[0][0] == "pre_tool_call"
     assert "adjacent" in fake_ctx.commands
 
@@ -104,6 +105,52 @@ def test_command_handler_does_not_shell_interpolate(fake_ctx):
     assert "invalid arguments" in payload["error"]
 
 
+def test_command_flags_are_coerced_to_the_schema_declared_types():
+    # Command tokens always arrive as strings; the handler-side validator
+    # type-checks against the schema, so numeric and boolean flags have to
+    # be cast or every non-default invocation is rejected.
+    coerce = adjacent._coerce_params
+    parse = adjacent._parse_command_args
+    assert coerce("news_correlation", parse(["--window-minutes", "30"])) == {
+        "window_minutes": 30
+    }
+    assert coerce("correlation_regime", parse(["--sigma", "2.5"])) == {"sigma": 2.5}
+    assert coerce("similar_hedges", parse(["--min-abs-correlation", "0.4"])) == {
+        "min_abs_correlation": 0.4
+    }
+    # Booleans accept both the bare-flag form and an explicit value.
+    assert coerce("portfolio_snapshot", parse(["--as-json"])) == {"as_json": True}
+    assert coerce("portfolio_snapshot", parse(["--as-json", "false"])) == {
+        "as_json": False
+    }
+    # Strings are left alone.
+    assert coerce("tracking", parse(["--index", "red"])) == {"index": "red"}
+
+
+def test_uncastable_flag_falls_through_to_a_validation_error():
+    # A value that cannot be cast is passed through untouched so the
+    # validator reports the mismatch rather than the coercion swallowing it.
+    out = adjacent.adjacent_command_handler("workflow correlation_regime --input x.json --sigma abc")
+    payload = json.loads(out)
+    assert payload["ok"] is False
+    assert "sigma: expected number, got str" in payload["error"]
+
+
+def test_numeric_workflow_flags_pass_validation_end_to_end():
+    # Regression: these three workflows were unreachable from the command
+    # because every numeric flag was rejected before the script ever ran.
+    for raw in (
+        "workflow news_correlation --news a.json --prices b.json --window-minutes 30",
+        "workflow correlation_regime --input a.json --sigma 2.5",
+        "workflow similar_hedges --input a.json --min-abs-correlation 0.4",
+    ):
+        payload = json.loads(adjacent.adjacent_command_handler(raw))
+        # The scripts fail on the absent fixture files, but they are reached:
+        # argument validation no longer short-circuits the dispatch.
+        assert "invalid arguments" not in payload.get("error", ""), raw
+        assert "returncode" in payload, raw
+
+
 def test_hook_handler_is_callable(fake_ctx):
     adjacent.register(fake_ctx)
     _event, handler = fake_ctx.hooks[0]
@@ -125,3 +172,11 @@ def test_bundled_skills_dir_matches_registry():
     skills_dir = _plugin_dir() / "skills"
     for name, rel in adjacent.BUNDLED_SKILLS.items():
         assert (skills_dir / rel).exists(), f"{name}: {rel} missing"
+    # And the reverse: a skill dropped into the package but never added
+    # to the registry is invisible to the host, so catch it here.
+    on_disk = {child.name for child in skills_dir.iterdir() if child.is_dir()}
+    assert on_disk == set(adjacent.BUNDLED_SKILLS), (
+        "skills on disk and BUNDLED_SKILLS disagree: "
+        f"unregistered={sorted(on_disk - set(adjacent.BUNDLED_SKILLS))} "
+        f"missing={sorted(set(adjacent.BUNDLED_SKILLS) - on_disk)}"
+    )

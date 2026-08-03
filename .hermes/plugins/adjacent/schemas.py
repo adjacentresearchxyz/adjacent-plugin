@@ -98,7 +98,10 @@ PORTFOLIO_SNAPSHOT = _schema(
 TRACKING = _schema(
     "adjacent_tracking",
     (
-        "Produce a per-row mid-based tracking-error table for an index. "
+        "Produce a per-position mid-based table for an index: size, mid, "
+        "cost basis, notional, %-weight, and return against cost basis. "
+        "This is the per-position leg of the tracking report, not the "
+        "tracking error itself (that needs an index reference series). "
         "Wraps scripts/tracking-index.py."
     ),
     _object(
@@ -189,8 +192,9 @@ MCP_QUERY = _schema(
 TRACKING_TABLE = _schema(
     "adjacent_tracking_table",
     (
-        "Build a per-index tracking-error table CSV from a prior "
-        "tracking-index.py run. Wraps scripts/table-tracking.py."
+        "Build a per-position table CSV for an index from a prior "
+        "tracking-index.py run. Same columns as adjacent_tracking, so it "
+        "is not a tracking-error table. Wraps scripts/table-tracking.py."
     ),
     _object(
         {"index": _SLUG, "output": _OUTPUT_PATH},

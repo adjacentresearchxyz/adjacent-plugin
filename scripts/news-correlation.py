@@ -9,9 +9,11 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from _timeparse import parse_timestamp
 
-def parse_ts(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+def parse_ts(value: object) -> datetime:
+    return parse_timestamp(value)
 
 
 def correlate(
@@ -44,6 +46,10 @@ def correlate(
             continue
         before = rows[before_index][1]
         after = rows[after_index][1]
+        # A mid of 0 (a market pinned at the floor) has no defined
+        # percent move; skip it rather than divide by zero.
+        if before == 0:
+            continue
         move_pct = (after - before) / before * 100
         results.append(
             {
