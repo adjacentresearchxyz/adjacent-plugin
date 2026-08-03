@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "adjacent-markets": {
+      "url": "https://mcp.adjacent.markets/mcp?apiKey=${ADJACENT_API_KEY}",
+      "headers": {}
+    },
+    "adjacent-markets-dev": {
+      "url": "https://mcp.dev.adjacent.markets/mcp?apiKey=${ADJACENT_API_KEY}",
+      "headers": {}
+    }
+  }
+}

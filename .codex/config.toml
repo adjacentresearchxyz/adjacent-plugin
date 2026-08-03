@@ -1,0 +1,37 @@
+# Adjacent Codex configuration.
+
+# Realtime tier. Requires ADJACENT_API_KEY in the environment.
+# Used for rebalance and live alerts.
+[mcp_servers.adjacent-markets]
+url = "https://mcp.adjacent.markets/mcp?apiKey=${ADJACENT_API_KEY}"
+
+# 15-min delayed tier. Fine for non-cost-sensitive workflows and the
+# default for briefs and scans when ADJACENT_API_KEY is unset.
+[mcp_servers.adjacent-markets-dev]
+url = "https://mcp.dev.adjacent.markets/mcp?apiKey=${ADJACENT_API_KEY}"
+
+# Read-only role agents.
+# - coordinator: daily loop.
+# - index-monitor: index-movers scan, sorted by 1D move.
+# - data-monitor: similar markets, candles, public snapshots, exports, docs, and news.
+# - briefing-writer: daily morning briefing formatter.
+# - ask-assistant: free-form Q&A routing through find/get/price.
+[agents.coordinator]
+description = "Coordinator for the Adjacent daily loop. Dispatches to index-monitor, data-monitor, briefing-writer, and ask-assistant, and assembles the final brief. Read-only; never places orders."
+config_file = "agents/coordinator.toml"
+
+[agents.index-monitor]
+description = "Sub-agent for the Adjacent index-movers scan. Emits sorted-by-1D-move output; persists threshold hits to a mover log."
+config_file = "agents/index-monitor.toml"
+
+[agents.data-monitor]
+description = "Read-only monitor for Adjacent similar markets, candles, public snapshots, exports, docs, news, and capability status."
+config_file = "agents/data-monitor.toml"
+
+[agents.briefing-writer]
+description = "Sub-agent for the daily Adjacent morning briefing. Emits a strictly formatted timestamped brief."
+config_file = "agents/briefing-writer.toml"
+
+[agents.ask-assistant]
+description = "Sub-agent behind /data/ask. Routes a free-form question through find -> get -> price and returns a single market card per matching id, or a structured explanation for non-market questions."
+config_file = "agents/ask-assistant.toml"

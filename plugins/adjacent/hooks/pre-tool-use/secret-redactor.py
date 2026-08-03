@@ -137,7 +137,22 @@ def decide(tool_name: str, tool_input: dict[str, Any]) -> dict[str, Any]:
 
 
 def main() -> int:
-    payload = json.load(sys.stdin)
+    try:
+        payload = json.load(sys.stdin)
+    except (json.JSONDecodeError, TypeError):
+        json.dump(
+            {
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "allow",
+                    "permissionDecisionReason": "redactor skipped unreadable payload",
+                }
+            },
+            sys.stdout,
+        )
+        return 0
+    if not isinstance(payload, dict):
+        payload = {}
     result = decide(payload.get("tool_name", ""), payload.get("tool_input") or {})
     json.dump(result, sys.stdout)
     return 0

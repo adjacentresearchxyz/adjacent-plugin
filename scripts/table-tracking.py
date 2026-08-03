@@ -15,10 +15,11 @@ import argparse
 import csv
 import json
 import sys
-from pathlib import Path
 
-DATA_DIR = Path(os.environ.get("ADJACENT_PLUGIN_DATA", "."))
-TRACKING_DIR = DATA_DIR / "plugins" / "adjacent" / "data" / "tracking"
+from _paths import data_dir
+
+
+TRACKING_DIR = data_dir() / "tracking"
 
 
 def main() -> int:

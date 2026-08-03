@@ -7,6 +7,7 @@
 # python
 __pycache__/
 *.pyc
+.pytest_cache/
 .venv/
 venv/
 
@@ -21,11 +22,11 @@ state/
 
 # runtime-generated per-index data (produced by scripts on each rebalance)
 # catalog and seeded positions stay committed; only dynamic outputs are ignored:
-plugins/adjacent/data/tracking/*
-!plugins/adjacent/data/tracking/example-index.json
-!plugins/adjacent/data/tracking/.gitkeep
-plugins/adjacent/data/positions/*.last_fill_ts
-plugins/adjacent/data/positions/*.series.json
+data/tracking/*
+!data/tracking/example-index.json
+!data/tracking/.gitkeep
+data/positions/*.last_fill_ts
+data/positions/*.series.json
 # editor / OS
 .DS_Store
 .idea/

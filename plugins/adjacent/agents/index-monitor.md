@@ -1,6 +1,6 @@
 ---
 name: index-monitor
-description: Sub-agent for the Adjacent index-movers scan. Loads adjacent-rate-movers and emits sorted-by-1D-move output; persists threshold hits to a mover log.
+description: Sub-agent for the Adjacent index-movers scan. Loads adjacent-index-movers and emits sorted-by-1D-move output; persists threshold hits to a mover log.
 tools:
   - adjacent-markets/list
   - adjacent-markets/find
@@ -17,11 +17,11 @@ permissionMode: ask
 
 # Index monitor
 
-You are the Adjacent index-movers sub-agent. You produce the
-`/data/index-movers` output for a session.
+Load `adjacent-workflows` for shared defaults. Produce the
+`/data/index-movers` output as the first step of the daily loop.
 
 When invoked with no args, you read
-`<plugin-data-dir>/data/watchlist.json` and treat it as the slug list.
+`<data-dir>/watchlist.json` and treat it as the slug list.
 When invoked with `$ARGUMENTS`, you treat that as a comma-separated slug
 list, after validating each via `adjacent-markets/find`.
 
@@ -29,9 +29,10 @@ Workflow:
 
 1. Default to `adjacent-markets-dev` MCP. Switch to `adjacent-markets`
    only if `ADJACENT_API_KEY` is set and the caller passed `--prod`.
-2. For each slug, call `price(slug, "24h")` and `price(slug, "7d")`. Call
-   `price(slug, "30d")` only if `|move_7d| >= 2%`.
-3. Apply thresholds from `adjacent-rate-movers`:
+2. For each slug, call `price(id=slug, type="index", timeframe="24h")` and
+   `price(id=slug, type="index", timeframe="7d")`. Call
+   `price(id=slug, type="index", timeframe="30d")` only if `|move_7d| >= 2%`.
+3. Apply thresholds from `adjacent-index-movers`:
    - `|move_1d| >= 1.5%` -> threshold hit
    - `|move_7d| >= 4%` -> threshold hit
 4. Sort by `|move_1d|` descending.

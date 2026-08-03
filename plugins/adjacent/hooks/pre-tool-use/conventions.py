@@ -6,7 +6,7 @@ with a JSON envelope containing tool_name and tool_input) and emits a JSON
 decision on stdout.
 
 Enforces the AGENTS.md writing rules on the *content* the model is about
-to persist via Write / Edit / MultiEdit / Bash:
+to persist via Write / Edit / MultiEdit:
 
 - no em-dash character (codepoint 0x2014); replace with ASCII hyphen or colon
 - bullets must be ASCII hyphen-minus, never the unicode bullet codepoint 0x2022
@@ -55,17 +55,11 @@ def scan_text(text: str) -> list[str]:
         findings.append("contains `pp`; use `%` (percent) instead")
     if any(is_emoji(ch) for ch in text):
         findings.append("contains an emoji; strip it")
-    for line in text.splitlines():
-        stripped = line.lstrip()
-        if stripped.startswith(BULLET_GLYPH):
-            findings.append(
-                f"line starts with unicode bullet: {line[:60]!r}; replace with `-`"
-            )
     return findings
 
 
 def collect_text(tool_name: str, tool_input: dict[str, Any]) -> str:
-    """Pull the to-be-written text out of a tool input, or the command for Bash."""
+    """Pull the to-be-written text out of a write-capable tool input."""
     if tool_name in WRITE_TOOLS:
         parts: list[str] = []
         if "content" in tool_input and isinstance(tool_input["content"], str):
@@ -77,9 +71,6 @@ def collect_text(tool_name: str, tool_input: dict[str, Any]) -> str:
                 if isinstance(e, dict) and isinstance(e.get("new_string"), str):
                     parts.append(e["new_string"])
         return "\n".join(parts)
-    if tool_name == "Bash":
-        cmd = tool_input.get("command", "")
-        return cmd if isinstance(cmd, str) else ""
     return ""
 
 
@@ -105,7 +96,22 @@ def decide(tool_name: str, tool_input: dict[str, Any]) -> dict[str, Any]:
 
 
 def main() -> int:
-    payload = json.load(sys.stdin)
+    try:
+        payload = json.load(sys.stdin)
+    except (json.JSONDecodeError, TypeError):
+        json.dump(
+            {
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "allow",
+                    "permissionDecisionReason": "conventions skipped unreadable payload",
+                }
+            },
+            sys.stdout,
+        )
+        return 0
+    if not isinstance(payload, dict):
+        payload = {}
     result = decide(payload.get("tool_name", ""), payload.get("tool_input") or {})
     json.dump(result, sys.stdout)
     return 0

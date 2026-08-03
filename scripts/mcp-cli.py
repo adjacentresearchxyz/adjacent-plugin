@@ -1,67 +1,31 @@
 #!/usr/bin/env python3
 """mcp-cli.py -- ad-hoc command-line MCP client for the Adjacent MCP.
 
-Subcommands:
+Subcommands match the live tool schemas:
 
-    find  <topic>       -- run find tool
-    get   <id>          -- run get tool
-    list  [type]        -- run list tool (defaults to events)
-    price <slug> <tf>   -- run price tool
+    find  <query> [--type TYPE]
+    get   <id> --type TYPE
+    list  [--type TYPE]
+    price <id> <timeframe> --type TYPE [--raw]
 
-Auth via `ADJACENT_API_KEY` (optional). With a key, calls the realtime tier
-endpoint; without, the public 15-min-delayed tier.
+Auth via ``ADJACENT_API_KEY`` (optional). With a key, calls the realtime
+tier; without, the public 15-min-delayed tier.
 
-Used by cron jobs and tests where the full Claude Code runtime is
-overkill or unavailable.
+Used by cron jobs and tests where an agent host is unavailable.
 """
 
 from __future__ import annotations
 
 import argparse
-import http.client
 import json
 import os
-import ssl
 import sys
-from urllib.parse import urlparse, urlencode
 
-DEFAULT_HOST = "mcp.adjacent.markets"
-DEFAULT_PORT_TLS = 443
+from _mcp import DEFAULT_HOST, call
 
 
-def build_url(host: str, api_key: str | None, endpoint: str = "/mcp") -> str:
-    base = f"https://{host}{endpoint}"
-    if api_key:
-        sep = "&" if "?" in base else "?"
-        base = f"{base}{sep}apiKey={api_key}"
-    return base
-
-
-def call(host: str, api_key: str | None, tool: str, args: dict) -> dict:
-    url = build_url(host, api_key)
-    parsed = urlparse(url)
-    is_tls = parsed.scheme == "https"
-    conn: http.client.HTTPConnection | http.client.HTTPSConnection
-    if is_tls:
-        ctx = ssl.create_default_context()
-        conn = http.client.HTTPSConnection(parsed.hostname, parsed.port or DEFAULT_PORT_TLS, context=ctx, timeout=15)
-    else:
-        conn = http.client.HTTPConnection(parsed.hostname, parsed.port or 80, timeout=15)
-    body = json.dumps(
-        {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "tools/call",
-            "params": {"name": tool, "arguments": args},
-        }
-    ).encode("utf-8")
-    path = parsed.path + ("?" + parsed.query if parsed.query else "")
-    headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    # Adjacent accepts the apiKey as a URL query param only; do not also send
-    # an Authorization header (that combination is rejected by the server).
-    conn.request("POST", path, body=body, headers=headers)
-    resp = conn.getresponse()
-    return json.loads(resp.read().decode("utf-8"))
+ENTITY_TYPES = ["index", "rate", "event", "market", "news"]
+PRICE_TYPES = ["index", "rate", "event", "market"]
 
 
 def main() -> int:
@@ -69,34 +33,83 @@ def main() -> int:
     ap.add_argument("--host", default=DEFAULT_HOST)
     ap.add_argument("--endpoint", default="/mcp")
     sub = ap.add_subparsers(dest="tool", required=True)
+
     list_p = sub.add_parser("list")
     list_p.add_argument(
         "--type",
-        default="events",
-        choices=["events", "event", "market", "markets", "index", "indices", "rate", "rates", "news"],
-        help="entity kind to list (default: events)",
+        default="event",
+        choices=ENTITY_TYPES + ["events", "markets", "indices"],
+        help="entity kind to list (default: event)",
     )
-    sub.add_parser("find").add_argument("topic")
-    sub.add_parser("get").add_argument("id")
-    p = sub.add_parser("price")
-    p.add_argument("slug")
-    p.add_argument("timeframe")
-    p.add_argument("--raw", action="store_true")
+
+    find_p = sub.add_parser("find")
+    find_p.add_argument("query", help="free-text topic / name / ticker")
+    find_p.add_argument("--type", choices=ENTITY_TYPES, default=None)
+
+    get_p = sub.add_parser("get")
+    get_p.add_argument("id")
+    get_p.add_argument(
+        "--type",
+        required=True,
+        choices=ENTITY_TYPES,
+        help="required entity type (index/rate/event/market/news)",
+    )
+
+    price_p = sub.add_parser("price")
+    price_p.add_argument("id", help="prefixed market id or index/rate slug")
+    price_p.add_argument("timeframe", help='human timeframe, e.g. "24h", "7d"')
+    price_p.add_argument(
+        "--type",
+        required=True,
+        choices=PRICE_TYPES,
+        help="required entity type (index/rate/event/market)",
+    )
+    price_p.add_argument("--raw", action="store_true")
+    # Accept legacy --slug flag as an alias for positional id clarity in docs.
+    price_p.add_argument(
+        "--slug",
+        dest="legacy_slug",
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+
     args = ap.parse_args()
     api_key = os.environ.get("ADJACENT_API_KEY")
-    tool_args = {}
+    tool_args: dict = {}
+
     if args.tool == "list":
-        tool_args = {"type": args.type}
+        kind = args.type
+        # Normalize plural aliases used in older scripts.
+        kind = {
+            "events": "event",
+            "markets": "market",
+            "indices": "index",
+        }.get(kind, kind)
+        tool_args = {"type": kind}
     elif args.tool == "find":
-        tool_args = {"topic": args.topic}
+        tool_args = {"query": args.query}
+        if args.type:
+            tool_args["type"] = args.type
     elif args.tool == "get":
-        tool_args = {"id": args.id}
+        tool_args = {"id": args.id, "type": args.type}
     elif args.tool == "price":
-        tool_args = {"slug": args.slug, "timeframe": args.timeframe, "raw": args.raw}
-    res = call(args.host, api_key, args.tool, tool_args)
+        entity_id = args.legacy_slug or args.id
+        tool_args = {
+            "id": entity_id,
+            "type": args.type,
+            "timeframe": args.timeframe,
+            "raw": bool(args.raw),
+        }
+
+    res = call(args.host, api_key, args.endpoint, args.tool, tool_args)
     json.dump(res, sys.stdout, indent=2)
     sys.stdout.write("\n")
-    return 0 if "error" not in res else 1
+    if "error" in res:
+        return 1
+    result = res.get("result") if isinstance(res, dict) else None
+    if isinstance(result, dict) and result.get("isError"):
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

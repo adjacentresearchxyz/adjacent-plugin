@@ -29,16 +29,18 @@ publishes, never tweets, never writes files.
 - `$ARGUMENTS` non-empty and not `--quiet` -> treat as a comma-separated
   slug list. Validate each via `adjacent-markets-dev/find`.
 - `$ARGUMENTS` empty -> use the default watchlist from
-  `<plugin-root>/data/watchlist.json`.
+  `<data-dir>/watchlist.json`.
 
 ## Behavior (when not --quiet)
 
 1. Resolve the slug list (default or `$ARGUMENTS`).
-2. Pull prices via `adjacent-markets-dev/price(slug, "24h")` and
-   `adjacent-markets-dev/price(slug, "7d")` for each slug. Switch to
+2. Pull prices via
+   `adjacent-markets-dev/price(id=slug, type="index", timeframe="24h")` and
+   `adjacent-markets-dev/price(id=slug, type="index", timeframe="7d")`
+   for each slug. Switch to
    `adjacent-markets` (prod) only if `ADJACENT_API_KEY` is set.
 3. Apply 1.5% (1D) and 4% (7D) thresholds from
-   `adjacent-rate-movers` / `data/index-movers`.
+   `adjacent-index-movers` / `data/index-movers`.
 4. Forward the resolved movers to `briefing-writer`.
 5. `briefing-writer` formats and prints the briefing per
    `skills/briefings/SKILL.md`.

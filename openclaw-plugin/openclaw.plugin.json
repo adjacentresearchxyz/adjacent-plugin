@@ -1,0 +1,54 @@
+{
+  "id": "adjacent-markets",
+  "name": "Adjacent Markets",
+  "description": "Read-only Adjacent prediction-market guidance: mid-quote conventions, index discovery, and mover thresholds. Never places orders or invokes shells.",
+  "version": "0.1.0",
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "apiKey": {
+        "type": "string",
+        "description": "Adjacent API key. Omit for the 15-min delayed tier."
+      },
+      "tier": {
+        "type": "string",
+        "description": "MCP tier: dev (adjacent-markets-dev) or prod (adjacent-markets). Defaults to dev.",
+        "enum": [
+          "dev",
+          "prod"
+        ]
+      }
+    }
+  },
+  "mcpServers": {
+    "adjacent-markets": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic-ai/mcp-remote",
+        "https://mcp.adjacent.markets/mcp?apiKey=${ADJACENT_API_KEY}"
+      ]
+    },
+    "adjacent-markets-dev": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic-ai/mcp-remote",
+        "https://mcp.dev.adjacent.markets/mcp?apiKey=${ADJACENT_API_KEY}"
+      ]
+    }
+  },
+  "contracts": {
+    "tools": [
+      "adjacent_discover",
+      "adjacent_price",
+      "adjacent_movers",
+      "adjacent_capabilities"
+    ]
+  }
+}

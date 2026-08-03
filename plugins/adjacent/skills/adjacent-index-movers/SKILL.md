@@ -1,7 +1,7 @@
 ---
-name: adjacent-rate-movers
+name: adjacent-index-movers
 description: Adjacent index move thresholds with explicit formulas and a clean alerting policy. Drives the /data/index-movers scan and the movers log.
-version: 1.1.0
+version: 1.2.0
 category: research
 allowed-tools:
   - adjacent-markets/price
@@ -10,10 +10,11 @@ allowed-tools:
   - adjacent-markets-dev/get
 ---
 
-# Adjacent rate movers
+# Adjacent index movers
 
-Every Adjacent index reports a `price(slug, "24h")` and a
-`price(slug, "7d")`. This skill codifies how to act on those numbers.
+Every Adjacent index reports a `price(id, type="index", timeframe="24h")`
+and a `price(id, type="index", timeframe="7d")`. This skill codifies how
+to act on those numbers.
 
 ## Formulas
 
@@ -35,8 +36,9 @@ For an index returning mid_open, mid_close, high, low:
 
 `convention-break` = sign of `move_1d` differs from sign of `move_7d`.
 When this fires, the move is unusual. Print `convention-break: yes` in
-the alert and consider a one-line explanation sourced from
-`adjacent-news-correlation`.
+the alert. Add a news explanation from the live `news/latest` surface
+(or supplied article JSON) when a headline explains the move; see the
+`adjacent-news-correlation` skill.
 
 ## Smoothing
 
@@ -57,7 +59,7 @@ daily series; compute SMA yourself.
 
 When you add a new index to the watchlist:
 
-1. Add the slug to `<plugin-root>/data/watchlist.json`.
+1. Add the slug to `<data-dir>/watchlist.json`.
 2. Update `AGENTS.md` index-mover thresholds only if the new index
    needs a different threshold (rare; default to the table above).
 3. After 1 week of live data, evaluate any spurious alerts and tune.

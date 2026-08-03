@@ -22,13 +22,16 @@ the exact same workflow in-line.
 
 1. Treat `$ARGUMENTS` as the topic. If it contains `:` (e.g.
    `kalshi:<example-market-id>`), it is already a market id - skip step 2.
-2. Else call `adjacent-markets-dev/find(topic=$ARGUMENTS)`. If multiple
+2. For builder or API questions, search an available `/docs.zip`
+   Markdown cache. If it is unavailable, answer only from bundled
+   skills and state that docs retrieval was unavailable.
+3. Else call `adjacent-markets-dev/find(query=$ARGUMENTS)`. If multiple
    matches, sort by 24h volume descending and cap at 5; if a parent
    event matches, prefer the most liquid child.
-3. For each id, chain `get(id)` for static fields, then
+4. For each id, chain `get(id)` for static fields, then
    `price(id, "24h")` for the move. Pull `price(id, "7d")` only when
    `|move_1d| >= 2%` or when the topic suggests a longer horizon.
-4. Render per the `briefings` skill (mid-quote pricing, `%` not `pp`,
+5. Render per the `briefings` skill (mid-quote pricing, `%` not `pp`,
    ASCII bullets, no em-dash, no emoji).
 
 ## Output shapes

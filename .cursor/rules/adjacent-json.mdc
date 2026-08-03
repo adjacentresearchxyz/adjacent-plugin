@@ -1,0 +1,51 @@
+---
+description: Adjacent JSON conventions - MCP server config and position file schema.
+globs: ["*.json"]
+alwaysApply: false
+---
+
+# Adjacent JSON conventions
+
+## MCP server config (mcp.json)
+
+`.cursor/mcp.json` registers two MCP servers:
+
+- `adjacent-markets` - realtime tier, requires `ADJACENT_API_KEY`.
+- `adjacent-markets-dev` - 15-min delayed tier, default.
+
+Each entry has a `url` (with `apiKey=${ADJACENT_API_KEY}` query param)
+and an empty `headers` object.
+
+## Position file schema
+
+Each `data/positions/<slug>.json` holds:
+
+```json
+{
+  "format_version": 1,
+  "_schema_ref": "fields_per_position and producers are documented in AGENTS.md section 'Position file schema'.",
+  "index": "<slug>",
+  "exchange": "kalshi",
+  "positions": [],
+  "last_fill_ts": null,
+  "as_of": null
+}
+```
+
+After a snapshot run, each entry in `positions` carries: `market_id`,
+`size`, `side`, `notional`, `mid`, `mid_open`, `cost_basis`,
+`current_weight`, `index`, `exchange`, `fees`, `fill_queue_pct`,
+`as_of`. See the repo root `AGENTS.md` for field meanings.
+
+## Tracking output
+
+`data/tracking/<slug>.json` is produced by
+`scripts/tracking-index.py` from the position file. Tracking error is
+`(mid_portfolio_return - mid_index_return)` in `%`, never `pp`.
+
+## Catalog guard
+
+The direct-index catalog (`data/adjacent_direct_indices.json`) ships
+with `_schema._placeholders.value: true`. Any attempt to place orders
+before the user replaces the example tickers is refused by the
+fail-closed guard. Do not bypass it.

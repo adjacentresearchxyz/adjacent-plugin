@@ -1,0 +1,54 @@
+{
+  "name": "@adjacent/openclaw-plugin",
+  "version": "0.1.0",
+  "description": "Read-only Adjacent prediction-market guidance plugin for OpenClaw. Mid-quote conventions, index discovery, and mover thresholds. Never places orders.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "openclaw.plugin.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "plugin:build": "npm run build && openclaw plugins build --entry ./dist/index.js",
+    "plugin:validate": "npm run build && openclaw plugins validate --entry ./dist/index.js",
+    "plugin:check": "npm run build && openclaw plugins build --entry ./dist/index.js --check",
+    "test": "python3 -m unittest tests.openclaw.test_openclaw -v"
+  },
+  "dependencies": {
+    "typebox": "^1.1.39"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.5.17"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=22.22.3"
+  },
+  "openclaw": {
+    "extensions": [
+      "./src/index.ts",
+      "./dist/index.js"
+    ],
+    "runtimeExtensions": [
+      "./dist/index.js"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.5.17",
+      "minGatewayVersion": "2026.5.17"
+    }
+  },
+  "keywords": [
+    "openclaw",
+    "adjacent",
+    "prediction-markets",
+    "mcp",
+    "mid-quote",
+    "read-only"
+  ],
+  "license": "MIT"
+}

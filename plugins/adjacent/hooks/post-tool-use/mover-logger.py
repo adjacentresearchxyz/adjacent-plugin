@@ -18,8 +18,8 @@ import os
 import sys
 from datetime import datetime, timezone
 
-DATA_DIR = os.environ.get("ADJACENT_PLUGIN_DATA", ".")
-LOG_PATH = os.path.join(DATA_DIR, "logs", "movers.log")
+STATE_DIR = os.environ.get("ADJACENT_STATE_DIR", ".")
+LOG_PATH = os.path.join(STATE_DIR, "logs", "movers.log")
 THRESHOLDS = {"1d": 0.015, "7d": 0.040}
 
 
@@ -38,7 +38,7 @@ def find_threshold(moves: dict[str, float]) -> str | None:
 
 def emit_extra_context(payload: dict) -> dict | None:
     tool = payload.get("tool_name", "")
-    if not tool.endswith("/price"):
+    if not (tool.endswith("/price") or tool.endswith("__price")):
         return None
     tool_response = payload.get("tool_response")
     if not isinstance(tool_response, dict):

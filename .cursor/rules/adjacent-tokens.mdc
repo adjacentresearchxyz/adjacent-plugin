@@ -1,0 +1,55 @@
+---
+description: Adjacent design tokens for UI and chart styling - use tokens, never hardcoded hex.
+globs: ["*.tsx", "*.ts", "*.css", "*.py"]
+alwaysApply: false
+---
+
+# Adjacent design tokens
+
+All UI and chart output must use Adjacent design tokens, never
+hardcoded hex values or generic library colormaps (`viridis`, `tab10`,
+`muted`, ...).
+
+## Canvas and ink
+
+- Canvas: `--comp-canvas` (`#ece9e2`)
+- Paper: `#ffffff`
+- Ink: `#0a0f0d`
+- Deep: `#0e2a1f`
+
+## Accent and series cycle
+
+- Primary accent / up: `--comp-green` (`#3fae5a`)
+- Down: `--comp-salmon` (`#e66b55`)
+- Series cycle: `#3fae5a`, `#e66b55`, `#6fb7e0`, `#d89a3f`, `#a8c49a`,
+  `#f0a8c8`
+
+## Lines and grid
+
+- Hairline: `#d6d2c8`
+- Grid: `#ecebea` (dotted, behind data)
+
+## Fonts
+
+- Inter (titles/labels): `--font-main`
+- Serif generic (deck): `--font-serif`. Not a named face.
+- Monospace generic (ticks and data values): `--font-mono`. Not a
+  named face. Inter is the only face the site loads.
+
+Never name a font directly; use the token stacks.
+
+## Chart shape
+
+- Square corners (`--radius: 0`).
+- Only the x baseline spine; horizontal gridlines only.
+- A lone line is off-black `#0a0f0d`; color distinguishes series.
+- Source credit bottom-left: `Source: Adjacent`. No wordmark, no
+  divider rule, no basis clause.
+- Axis ticks carry the unit on the top tick only; stated values use
+  `0.00%`. Never `pp`.
+
+## Python helper
+
+Prefer `scripts/adjacent_chart_style.py` over re-deriving values by
+hand. It carries the palette, the matplotlib/seaborn theme, the Plotly
+template, and the source-line stamper.

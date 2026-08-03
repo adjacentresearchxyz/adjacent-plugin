@@ -1,7 +1,7 @@
 # AGENTS.md - adjacent-plugin
 
-How any Claude agent (or human) should behave when authoring, running, or
-scaffolding anything via this Adjacent plugin.
+How any agent or human should behave when authoring, running, or
+scaffolding anything via this Adjacent plugin repository.
 
 ## Pricing convention (the core rule)
 
@@ -131,7 +131,7 @@ is refused by the fail-closed guard.
 | 7D | `|move| >= 4%` | alert + append to movers log |
 | 30D | `|move| >= 8%` | morning-briefing highlight |
 
-The `adjacent-rate-movers` skill has the canonical formulas.
+The `adjacent-index-movers` skill has the canonical formulas.
 
 ## Output safety
 
@@ -140,6 +140,65 @@ The `secret-redactor` hook scrubs `ADJACENT_API_KEY`, `KALSHI_API_KEY`,
 `MCP_DUNE_API_KEY` from any Bash tool output before it is persisted to the
 trajectory log. It does not modify command behavior; it only rewrites the
 captured output.
+
+## Chart branding (every chart is an Adjacent chart)
+
+All charts this plugin produces - Datawrapper embeds, the Seaborn
+fallback, Plotly exports, any matplotlib output - must look like
+Adjacent, not like a stock library default. The canonical spec is the
+`adjacent-chart-style` skill, derived from the Adjacent Design System
+tokens (`design-system/src/tokens.css`) and the Storybook chart
+components (`Chart`, `ChartRenderer`, `TradingViewChart`,
+`FullscreenChart`).
+
+The reusable Python helper is
+`scripts/adjacent_chart_style.py`. It carries the palette, the
+matplotlib/seaborn theme, the Plotly template, and the source-line
+stamper. Prefer it over re-deriving values by hand.
+
+On-brand summary (see the skill for the full table):
+
+- Canvas `#ece9e2` (figure and plot area - one surface); paper
+  `#ffffff` is a token for non-plot panels only.
+- Ink `#0a0f0d`; deep `#0e2a1f`.
+- Lone series: off-black `#0a0f0d`. Directional up `#3fae5a`; down
+  `#c0392b` (TradingViewChart). Salmon `#e66b55` is categorical /
+  badge negative, not a trend color.
+- Series cycle (ChartRenderer): `#3fae5a`, `#e87d2a`, `#4a90d9`,
+  `#b85cce`, then sage `#a8c49a` / pink `#f0a8c8` for a rare 5th/6th.
+- Hairline `#d6d2c8`; grid `#ecebea` (dotted, behind data).
+- Fonts mirror the design-system tokens: `--font-main` is Inter, the
+  only face the site loads; `--font-serif` (deck) and `--font-mono`
+  (ticks, data values) are the CSS generics. Never name a font
+  directly; use the stacks.
+- Square corners (`--radius: 0`); only the x baseline spine.
+- Horizontal gridlines only. Color is for distinguishing two or more
+  series, never a lone line by direction.
+- Source credit bottom-left: `Source: Adjacent`. No wordmark, no
+  divider rule, no basis clause.
+- Headline states the finding; the deck is just the identifier.
+- Axis ticks carry the unit on the top tick only; stated values use
+  `0.00%`. Never `pp`. No em-dash, no emoji.
+- Candles: Heikin-Ashi only (never raw candlesticks).
+
+Enforcement:
+
+- The `chart-style` pre-tool-use hook blocks Write/Edit of chart code
+  that hardcodes a hex outside the Adjacent palette or uses a generic
+  library colormap (`viridis`, `tab10`, `muted`, ...) without importing
+  `adjacent_chart_style`. It nudges (additionalContext) on chart code
+  that has no Adjacent signal yet.
+- The `conventions` hook still enforces no-em-dash / no-`pp` / no-emoji
+  on chart titles and metadata payloads.
+
+## Agent packages
+
+Keep shared behavior, scripts, and data platform-neutral. Place host
+metadata and integration details only in that host's package directory.
+
+All hosts use the same defaults: dev MCP unless `ADJACENT_API_KEY` is
+set, mid-quote math, Adjacent-branded charts, live slug discovery, and
+fail-closed trading.
 
 ## What this plugin intentionally does NOT include
 

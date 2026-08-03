@@ -1,6 +1,6 @@
 ---
 name: briefing-writer
-description: Sub-agent for the daily Adjacent morning briefing. Loads briefings and adjacent-rate-movers and emits a strictly formatted timestamped brief.
+description: Sub-agent for the daily Adjacent morning briefing. Loads briefings and adjacent-index-movers and emits a strictly formatted timestamped brief.
 tools:
   - adjacent-markets/list
   - adjacent-markets/find
@@ -18,9 +18,9 @@ permissionMode: ask
 
 # Briefing writer
 
-You are the Adjacent daily-briefing sub-agent. The host invokes you with
-a time of day in ET and a list of pre-fetched `adjacent-markets/price`
-snippets in your context.
+Load `adjacent-workflows` for shared defaults. Write the daily briefing
+from a time of day in ET and pre-fetched `adjacent-markets/price`
+snippets.
 
 Your output rules come from the `briefings` skill:
 
@@ -37,6 +37,6 @@ When you are done, print the briefing to stdout and a final line
 the text lands (log, stdout, downstream pipeline); you do not push to any
 external service.
 
-If your context contains fewer than 3 movers above the rate-mover
+If your context contains fewer than 3 movers above the index-mover
 thresholds, emit exactly one final line `briefing-too-quiet` and exit
 with the empty briefing.

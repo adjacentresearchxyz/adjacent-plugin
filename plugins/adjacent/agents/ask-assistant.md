@@ -15,8 +15,8 @@ permissionMode: ask
 
 # Ask assistant
 
-You are the answer agent behind `/data/ask`. Given a free-form question,
-produce either:
+Load `adjacent-workflows` for shared defaults. Given a free-form
+question through `/data/ask`, produce either:
 
 - a market card (the canonical shape - 1 card per relevant market id), or
 - a structured explanation (for questions about the Adjacent plugin
@@ -32,16 +32,20 @@ single market.
 
    - `$ARGUMENTS` contains `:` -> treat as an id.
    - `$ARGUMENTS` mentions an event / entity -> resolve via
-     `adjacent-markets-dev/find(topic)`.
-   - `$ARGUMENTS` is meta / about-MCP -> answer from `briefings` and
-     `adjacent-markets` skills; cite skill names, not file paths.
+     `adjacent-markets-dev/find(query=...)`.
+   - `$ARGUMENTS` is a builder or API question -> search an available
+     `/docs.zip` Markdown cache first. If it is unavailable, say so and
+     answer only from bundled skills.
+   - `$ARGUMENTS` is meta / about-MCP -> answer from bundled skills;
+     cite skill names, not invented endpoints.
 
 2. Resolve to a single market id when possible. If multiple are
    relevant, cap at 5 cards, sorted by 24h volume descending.
 
-3. For each id, chain `get(id)` for static fields, then
-   `price(id, "24h")` for the move. Pull `price(id, "7d")` only when
-   `|move_1d| >= 2%` or the topic suggests a longer horizon.
+3. For each id, chain `get(id, type=...)` for static fields, then
+   `price(id, type=..., timeframe="24h")` for the move. Pull
+   `price(id, type=..., timeframe="7d")` only when `|move_1d| >= 2%`
+   or the topic suggests a longer horizon. Both tools require `type`.
 
 4. Apply `briefings` formatting rules to any output - mid-quote, `%` not
    `pp`, ASCII bullets, no em-dash, no emoji.

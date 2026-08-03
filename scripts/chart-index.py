@@ -3,8 +3,7 @@
 
 Two series: index value and portfolio value, both rebased to 100 at
 the most recent fill timestamp for the named index. Reads from
-<plugin-data>/plugins/adjacent/data/positions/<slug>.series.json
-(in production these are populated from MCP price calls via
+data/positions/<slug>.series.json (in production these are populated from MCP price calls via
 scripts/mcp-cli.py price ... --raw).
 
 Output is CSV on stdout: ts,index,portfolio. Pipe into
@@ -16,12 +15,12 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import os
 import sys
-from pathlib import Path
 
-DATA_DIR = Path(os.environ.get("ADJACENT_PLUGIN_DATA", "."))
-POSITIONS_DIR = DATA_DIR / "plugins" / "adjacent" / "data" / "positions"
+from _paths import data_dir
+
+
+POSITIONS_DIR = data_dir() / "positions"
 
 
 def load_series(name: str) -> list[tuple[str, float]]:

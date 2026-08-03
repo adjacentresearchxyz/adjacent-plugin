@@ -20,7 +20,7 @@ Produce a movers scan. Use `adjacent-markets-dev` by default; if
 
 If $ARGUMENTS is empty:
 
-- Read the default watchlist from `<plugin-root>/data/watchlist.json`.
+- Read the default watchlist from `<data-dir>/watchlist.json`.
 
 If $ARGUMENTS is non-empty:
 
@@ -28,11 +28,11 @@ If $ARGUMENTS is non-empty:
   `find(slug, "index")`; warn on misses but continue.
 
 For each slug call:
-- `price(slug, "24h")` -> `move_1d`
-- `price(slug, "7d")`  -> `move_7d`
-- `price(slug, "30d")` -> `move_30d` (only if move_7d >= 2%)
+- `price(id=slug, type="index", timeframe="24h")` -> `move_1d`
+- `price(id=slug, type="index", timeframe="7d")`  -> `move_7d`
+- `price(id=slug, type="index", timeframe="30d")` -> `move_30d` (only if move_7d >= 2%)
 
-Apply the thresholds from the `adjacent-rate-movers` skill:
+Apply the thresholds from the `adjacent-index-movers` skill:
 - 1D spontaneous alert: `|move_1d| >= 1.5%`
 - 7D weekly alert:    `|move_7d| >= 4%`
 

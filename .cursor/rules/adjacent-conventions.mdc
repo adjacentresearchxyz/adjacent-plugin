@@ -1,0 +1,34 @@
+---
+description: Adjacent writing conventions - ASCII only, percent format, no em-dash, no emoji.
+globs: ["*.md", "*.py", "*.tsx", "*.ts", "*.json", "*.toml"]
+alwaysApply: true
+---
+
+# Adjacent writing conventions
+
+Follow these rules in every Cursor output.
+
+## Writing rules
+
+- ASCII `-` bullets; never the unicode bullet glyph (codepoint U+2022).
+- `%` (percent); never `pp` (percentage points).
+- No em-dash anywhere; use `-` or `:` or rephrase.
+- No emojis in body, tables, chart titles, log lines.
+- ASCII `-` inside numeric ranges (`4-7%`) is fine.
+
+## Format conventions
+
+- Currency: `$100` not `100 USD`.
+- Decimal: `0.012` not `.012`.
+- Date: `YYYY-MM-DD`.
+
+## Chart metadata
+
+- No em-dash, no emoji in chart titles or metadata payloads.
+- Percent as `0.00%`; never `pp`.
+
+## Secrets
+
+Never print `ADJACENT_API_KEY`, `KALSHI_API_KEY`, `KALSHI_PASSPHRASE`,
+`KALSHI_RSA_KEY_PATH`, `DATAWRAPPER_API_KEY`, or `MCP_DUNE_API_KEY`.
+Do not emit secret values.

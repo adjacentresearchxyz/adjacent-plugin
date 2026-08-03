@@ -1,0 +1,40 @@
+{
+  "format_version": 1,
+  "capabilities": {
+    "docs_archive": {
+      "surface": "/docs.zip",
+      "api_status": "live",
+      "plugin_status": "guided"
+    },
+    "similar_markets": {
+      "surface": "markets/{id}/similar",
+      "api_status": "live",
+      "plugin_status": "guided"
+    },
+    "market_candles": {
+      "surface": "markets/{id}/candles",
+      "api_status": "live",
+      "plugin_status": "guided"
+    },
+    "public_snapshots": {
+      "surface": "/public/*",
+      "api_status": "live",
+      "plugin_status": "guided"
+    },
+    "exports": {
+      "surface": "/export/*",
+      "api_status": "live",
+      "plugin_status": "guided"
+    },
+    "news_latest": {
+      "surface": "news/latest",
+      "api_status": "live",
+      "plugin_status": "guided"
+    },
+    "index_correlation": {
+      "surface": "indices/{id}/correlation",
+      "api_status": "unavailable",
+      "plugin_status": "offline_analysis_only"
+    }
+  }
+}

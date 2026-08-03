@@ -1,24 +1,23 @@
 #!/usr/bin/env python3
 """portfolio-snapshot.py - portfolio status for any index.
 
-Reads cached position documents from
-<plugin-data>/plugins/adjacent/data/positions/*.json. Emits a
-human-readable status; with --json, the structured form for downstream
-consumers (charting, briefs). All timestamps in America/New_York (ET).
+Reads cached position documents from data/positions/*.json. Emits a
+human-readable status or, with --json, structured output for downstream
+consumers. All timestamps use America/New_York (ET).
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from datetime import datetime
-from pathlib import Path
 from zoneinfo import ZoneInfo
 
-DATA_DIR = Path(os.environ.get("ADJACENT_PLUGIN_DATA", "."))
-POSITIONS_DIR = DATA_DIR / "plugins" / "adjacent" / "data" / "positions"
+from _paths import data_dir
+
+
+POSITIONS_DIR = data_dir() / "positions"
 ET = ZoneInfo("America/New_York")
 
 
@@ -37,6 +36,14 @@ def load_all() -> dict[str, dict]:
     return out
 
 
+def load_index(index: str) -> dict[str, dict]:
+    path = POSITIONS_DIR / f"{index}.json"
+    try:
+        return {index: json.loads(path.read_text(encoding="utf-8"))}
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
 def now_et_str() -> str:
     return datetime.now(ET).strftime("%Y-%m-%d %H:%M:%S ET")
 
@@ -47,9 +54,7 @@ def main() -> int:
     ap.add_argument("--index", help="report only this index slug")
     ap.add_argument("--include-pnl", action="store_true")
     args = ap.parse_args()
-    docs = load_all()
-    if args.index:
-        docs = {k: v for k, v in docs.items() if k == args.index}
+    docs = load_index(args.index) if args.index else load_all()
     if not docs:
         print("no portfolio snapshots found", file=sys.stderr)
         return 1

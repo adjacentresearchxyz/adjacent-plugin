@@ -1,0 +1,31 @@
+---
+description: Adjacent mid-quote pricing convention for all tracking, P&L, returns, and percentages.
+globs: ["*.py", "*.md", "*.tsx", "*.ts"]
+alwaysApply: false
+---
+
+# Mid-quote pricing convention
+
+All tracking, P&L, return, and percentage math uses mid quotes. The
+Adjacent indices publish YES / NO ask + YES / NO bid; modeling at ask
+or bid overstates or understates slippage and produces misleading
+tracking error.
+
+## Rules
+
+- Tracking report = `(mid_portfolio_return - mid_index_return)` in `%`.
+- Rebalance decisions fire on mid price moves, not on last-trade prints.
+- News correlation: align timestamps at the minute, compare mid deltas
+  only.
+- Never use `pp` (percentage points); use `%`.
+
+## MCP tiers
+
+| Tier | Used when |
+| --- | --- |
+| 15-min delayed | public, no `ADJACENT_API_KEY`, fine for non-cost-sensitive workflows |
+| Realtime | `ADJACENT_API_KEY` set, required for rebalance and live alerts |
+
+Default to `adjacent-markets-dev` for broadcasting and experimentation.
+Promote to `adjacent-markets` when the workflow publishes or is being
+demoed to a paying user.

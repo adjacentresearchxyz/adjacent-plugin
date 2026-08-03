@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """tracking-index.py - produce a per-row tracking-error table for any index.
 
-Reads <plugin-data>/plugins/adjacent/data/positions/<slug>.json and
-emits <plugin-data>/plugins/adjacent/data/tracking/<slug>.json. Each
-row reports position size, mid, cost basis, current notional,
+Reads data/positions/<slug>.json and emits data/tracking/<slug>.json.
+Each row reports position size, mid, cost basis, current notional,
 %-weight in the portfolio, today's mid-based move (P&L), and the
 queued fill deviation.
 
@@ -14,11 +13,9 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
-from pathlib import Path
 
-DATA_DIR = Path(os.environ.get("ADJACENT_PLUGIN_DATA", "."))
+from _paths import data_dir
 
 
 def main() -> int:
@@ -26,7 +23,8 @@ def main() -> int:
     ap.add_argument("--index", required=True, help="position file slug")
     ap.add_argument("--json", action="store_true", help="also print to stdout")
     args = ap.parse_args()
-    pos_path = DATA_DIR / "plugins" / "adjacent" / "data" / "positions" / f"{args.index}.json"
+    root = data_dir()
+    pos_path = root / "positions" / f"{args.index}.json"
     if not pos_path.exists():
         raise SystemExit(f"error: missing positions file {pos_path}")
     doc = json.loads(pos_path.read_text(encoding="utf-8"))
@@ -50,7 +48,7 @@ def main() -> int:
             "pnl_pct_mid": round(pnl_pct, 4),
             "fill_queue_pct": p.get("fill_queue_pct"),
         })
-    out_dir = DATA_DIR / "plugins" / "adjacent" / "data" / "tracking"
+    out_dir = root / "tracking"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{args.index}.json"
     out_path.write_text(json.dumps({"index": args.index, "rows": rows}, indent=2), encoding="utf-8")

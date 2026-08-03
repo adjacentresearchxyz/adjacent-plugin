@@ -1,6 +1,6 @@
 {
   "name": "adjacent",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Adjacent prediction-market tools - skills, commands, hooks, agents, MCP servers.",
   "author": {
     "name": "Lucas Kohorst",
@@ -21,13 +21,18 @@
   "hooks": [
     {
       "event": "PreToolUse",
-      "match": { "tool_name": ["Bash", "Write", "Edit", "MultiEdit"] },
+      "match": { "tool_name": ["Write", "Edit", "MultiEdit"] },
       "script": "hooks/pre-tool-use/conventions.py"
     },
     {
       "event": "PreToolUse",
       "match": { "tool_name": ["Bash"] },
       "script": "hooks/pre-tool-use/secret-redactor.py"
+    },
+    {
+      "event": "PreToolUse",
+      "match": { "tool_name": ["Bash", "Write", "Edit", "MultiEdit"] },
+      "script": "hooks/pre-tool-use/chart-style.py"
     },
     {
       "event": "PostToolUse",

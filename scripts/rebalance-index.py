@@ -18,8 +18,8 @@ adapter returns `(results, missing_env_list)` - the missing list is the
 source of truth for env-var probes.
 
 Fail-closed safety: refuses to place orders unless
-<plugin-data>/plugins/adjacent/data/adjacent_direct_indices.json
-has _schema._placeholders.value: false. Replace each placeholder via
+data/adjacent_direct_indices.json has _schema._placeholders.value:
+false. Replace each placeholder via
 scripts/portfolio-snapshot.py --index <slug> --json, then flip the flag.
 
 Refuses to run on weekends (Sat / Sun UTC at placement time) unless
@@ -41,7 +41,7 @@ from typing import Any
 import urllib.error
 import urllib.request
 
-DATA_DIR = Path(os.environ.get("ADJACENT_PLUGIN_DATA", "."))
+from _paths import data_dir
 
 KALSHI_BASE = os.environ.get("KALSHI_BASE", "https://api.kalshi.com")
 KALSHI_API_KEY = os.environ.get("KALSHI_API_KEY", "")
@@ -88,11 +88,15 @@ def _kalshi_order(action: str, leg: dict[str, Any], index_slug: str) -> dict[str
     }
 
 
-def _kalshi_send(method: str, path: str, body: dict[str, Any]) -> dict[str, Any]:
+def _kalshi_send(
+    method: str,
+    path: str,
+    body: dict[str, Any],
+    private_key,
+) -> dict[str, Any]:
     ts = str(int(time.time() * 1000))
     body_bytes = json.dumps(body, separators=(",", ":")).encode("utf-8") if body else b""
     sig_msg = (ts + method + path).encode("utf-8") + body_bytes
-    private_key = _kalshi_load_key()
     signature = _kalshi_sign(private_key, sig_msg)
     req = urllib.request.Request(
         KALSHI_BASE + path,
@@ -121,10 +125,25 @@ def kalshi_adapter(plan: dict[str, Any]) -> tuple[dict[str, list], list[str]]:
     if missing:
         return {"sells": [], "buys": [], "errors": [{"reason": f"missing env: {','.join(missing)}"}]}, missing
     out: dict[str, list] = {"sells": [], "buys": [], "errors": []}
+    private_key = _kalshi_load_key()
     for leg in plan.get("sells", []):
-        out["sells"].append(_kalshi_send("POST", "/v2/portfolio/orders", _kalshi_order("sell", leg, plan["index"])))
+        out["sells"].append(
+            _kalshi_send(
+                "POST",
+                "/v2/portfolio/orders",
+                _kalshi_order("sell", leg, plan["index"]),
+                private_key,
+            )
+        )
     for leg in plan.get("buys", []):
-        out["buys"].append(_kalshi_send("POST", "/v2/portfolio/orders", _kalshi_order("buy", leg, plan["index"])))
+        out["buys"].append(
+            _kalshi_send(
+                "POST",
+                "/v2/portfolio/orders",
+                _kalshi_order("buy", leg, plan["index"]),
+                private_key,
+            )
+        )
     return out, []
 
 
@@ -164,7 +183,7 @@ def load_plan(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def catalog_check() -> tuple[bool, str]:
-    p = DATA_DIR / "plugins" / "adjacent" / "data" / "adjacent_direct_indices.json"
+    p = data_dir() / "adjacent_direct_indices.json"
     safe = False
     try:
         doc = json.loads(p.read_text(encoding="utf-8"))
@@ -190,6 +209,10 @@ def main() -> int:
             "or wait until Monday 16:00 ET"
         )
     plan = load_plan(args)
+    if plan.get("index") != args.index:
+        raise SystemExit(
+            f"error: plan index {plan.get('index')!r} does not match --index {args.index!r}"
+        )
     plan["_placed_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     if args.json or args.dry_run:
         json.dump(plan, sys.stdout, indent=2)

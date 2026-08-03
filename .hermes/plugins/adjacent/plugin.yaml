@@ -1,0 +1,30 @@
+name: adjacent
+version: 1.0.0
+description: >-
+  Hermes-native Adjacent prediction-market plugin. Exposes safe,
+  allowlisted local-script workflows (portfolio snapshot, tracking,
+  chart CSV, read-only MCP queries, fail-closed rebalance plans),
+  bundles the Adjacent skill guidance, ships a pre_tool_call hook that
+  blocks AGENTS.md output violations, and registers the /adjacent slash
+  command that explains and dispatches the supported workflows.
+author: Lucas Kohorst
+
+provides_tools:
+  - adjacent_portfolio_snapshot
+  - adjacent_tracking
+  - adjacent_chart_csv
+  - adjacent_mcp_query
+  - adjacent_tracking_table
+  - adjacent_rebalance_plan
+  - adjacent_datawrapper_index
+  - adjacent_capability_status
+  - adjacent_news_correlation
+  - adjacent_correlation_regime
+  - adjacent_news_latest
+  - adjacent_candles_chart
+  - adjacent_similar_hedges
+  - adjacent_snapshot_health
+  - adjacent_http_get
+
+provides_hooks:
+  - pre_tool_call

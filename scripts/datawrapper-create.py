@@ -16,50 +16,26 @@ import argparse
 import json
 import os
 import sys
-from pathlib import Path
-from typing import Any
-from urllib import request as urlrequest
-from urllib.error import HTTPError
 
-DATAWRAPPER_API_KEY = os.environ.get("DATAWRAPPER_API_KEY", "")
-BASE = "https://api.datawrapper.de"
-
-
-def post(path: str, body: dict[str, Any] | None = None, raw: bytes | None = None, ctype: str = "application/json") -> dict[str, Any]:
-    data = raw if raw is not None else (json.dumps(body).encode("utf-8") if body else None)
-    req = urlrequest.Request(
-        BASE + path,
-        method="POST",
-        data=data,
-        headers={
-            "Authorization": f"Bearer {DATAWRAPPER_API_KEY}",
-            "Content-Type": ctype,
-        },
-    )
-    try:
-        with urlrequest.urlopen(req, timeout=20) as resp:
-            text = resp.read().decode("utf-8")
-            return json.loads(text) if text and text.startswith("{") else {"raw": text}
-    except HTTPError as e:
-        return {"error": e.code, "body": e.read().decode("utf-8", errors="replace")}
+from _datawrapper import post, read_csv
 
 
 def main() -> int:
-    if not DATAWRAPPER_API_KEY:
+    api_key = os.environ.get("DATAWRAPPER_API_KEY")
+    if not api_key:
         print("error: DATAWRAPPER_API_KEY unset", file=sys.stderr)
         return 1
     ap = argparse.ArgumentParser()
     ap.add_argument("--title", required=True)
     ap.add_argument("--csv", help="path to a CSV file; default reads stdin")
     args = ap.parse_args()
-    if args.csv:
-        csv_bytes = Path(args.csv).read_bytes()
-    elif not sys.stdin.isatty():
-        csv_bytes = sys.stdin.buffer.read()
-    else:
-        print("error: no CSV input", file=sys.stderr)
+    try:
+        csv_bytes = read_csv(args.csv)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
         return 2
     created = post(
+        api_key,
         "/v3/charts",
         body={"title": args.title, "type": "d3-lines" if b"," in csv_bytes[:300] else "tables"},
     )
@@ -72,7 +48,12 @@ def main() -> int:
         json.dump(created, sys.stdout, indent=2)
         sys.stdout.write("\n")
         return 3
-    upload = post(f"/v3/charts/{chart_id}/data", raw=csv_bytes, ctype="text/csv")
+    upload = post(
+        api_key,
+        f"/v3/charts/{chart_id}/data",
+        raw=csv_bytes,
+        content_type="text/csv",
+    )
     if "error" in upload:
         json.dump(upload, sys.stdout, indent=2)
         sys.stdout.write("\n")

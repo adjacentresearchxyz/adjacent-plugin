@@ -1,22 +1,36 @@
-# Adjacent prediction-market plugin
+# Adjacent prediction-market plugins
 
-Claude Code plugin for the
-[Adjacent prediction-market MCP](https://docs.adjacent.markets/explore/mcp).
+Cross-platform integrations for the
+[Adjacent MCP](https://docs.adjacent.markets/explore/mcp).
 
 ## Features
 
-1. **Daily briefs**: `/briefing/morning` produces a one-line + 1-bullet
-   per-idea report from the index-movers scan.
-2. **Free-form Q&A**: `/data/ask <question>` routes any topic through
-   the Adjacent MCP.
-3. **Easy charting**: `/charts/datawrapper-publish` turns any CSV into
-   a Datawrapper chart with emphasized % formatting.
-4. **Index-mover scans**: `/data/index-movers` flags 1D / 7D / 30D
-   moves on a configurable watchlist (1.5% / 4% / 8% thresholds).
-5. **Direct indexing**: `/trading/rebalance-index` proposes or places
-   exchange orders, fail-closed by default.
+- Market discovery, prices, and Q&A.
+- Mover scans and daily briefs.
+- Adjacent-branded charts, including candles-backed charts.
+- Portfolio tracking and rebalance plans.
+- Live news-to-price ranking and similar-market hedge discovery.
+- Docs Q&A, data exports, and public snapshot health checks.
+- Mid-quote math and fail-closed trading.
 
-## Install
+The `news/latest` surface is live. Index correlation is not live yet;
+its regime analysis accepts supplied JSON only.
+
+## Packages
+
+Each adapter is self-contained in its package directory. Shared
+`scripts/` and `data/` stay host-neutral, so every package reads the
+same code paths and catalogs.
+
+| Host | Package | Setup |
+| --- | --- | --- |
+| Claude Code | `plugins/adjacent` | [README](plugins/adjacent/README.md) |
+| Hermes | `.hermes` | [README](.hermes/README.md) |
+| Codex | `.codex` | [README](.codex/README.md) |
+| Cursor | `.cursor` | [README](.cursor/README.md) |
+| OpenClaw | `openclaw-plugin` | [README](openclaw-plugin/README.md) |
+
+### Claude Code
 
 ```
 /plugin marketplace add adjacentresearchxyz/adjacent-plugin
@@ -25,10 +39,22 @@ Claude Code plugin for the
 
 Prefix every command with `adjacent:` (e.g. `/adjacent:briefing/morning`).
 
-## Configuration
+## Environment
 
-- Adjacent realtime: `ADJACENT_API_KEY`. Skip it for the 15-min
-  delayed tier (briefs and scans still work).
-- Kalshi direct indexing: `KALSHI_API_KEY`, `KALSHI_PASSPHRASE`,
-  `KALSHI_RSA_KEY_PATH` (RSA-PSS).
-- Datawrapper charting: `DATAWRAPPER_API_KEY`.
+- `ADJACENT_API_KEY`: realtime data. Optional for delayed data.
+- `ADJACENT_PLUGIN_ROOT`: install root containing `scripts/` and `data/`.
+- `ADJACENT_PLUGIN_SCRIPTS`: explicit scripts-directory override when the
+  host package is installed outside the monorepo.
+- `ADJACENT_DATA_DIR`: optional shared data-directory override.
+- `ADJACENT_STATE_DIR`: optional logs and chart-output directory.
+- `DATAWRAPPER_API_KEY`: chart publishing.
+- `KALSHI_API_KEY`, `KALSHI_PASSPHRASE`, `KALSHI_RSA_KEY_PATH`: trading.
+
+Never commit secrets.
+
+## Validate
+
+```bash
+python3 scripts/validate-plugin-packages.py
+python3 -m pytest tests -q
+```

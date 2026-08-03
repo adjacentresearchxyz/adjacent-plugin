@@ -32,7 +32,7 @@ Run the direct-index rebalance for any Adjacent index. Loads the
 
 ## Workflow
 
-1. Read `<plugin-root>/data/adjacent_direct_indices.json`. Refuse to
+1. Read `<data-dir>/adjacent_direct_indices.json`. Refuse to
    run if `_schema._placeholders.value` is not `false` (the
    `scripts/rebalance-index.py` fail-closed guard does this).
 2. Refuse to run on weekends (Saturday or Sunday UTC at placement time)

@@ -30,4 +30,11 @@ it and follow it. Print 3 final lines per the `briefings` skill:
 If `DATAWRAPPER_API_KEY` is unset:
 - Print: `error: DATAWRAPPER_API_KEY unset`
 - Print: `Preferred route: publish via Datawrapper. Please add your API key to do so.`
-- As a fallback, build and save the appropriate chart locally using Seaborn (Python); for example, read the CSV and generate a chart matching the intended output.
+- As a fallback, build and save the chart locally using Seaborn (Python),
+  branded as Adjacent. Load the `adjacent-chart-style` skill and use the
+  helper so the output matches the design system:
+  `import adjacent_chart_style as adj; fig, ax = adj.figure(headline=...,
+  deck=...); ... adj.save(fig, path)`. The headline states the finding;
+  the identifier goes in the deck. Use `adj.SERIES` / `adj.UP` /
+  `adj.DOWN`, never a library-default palette. The `chart-style` hook
+  blocks divergent colors.

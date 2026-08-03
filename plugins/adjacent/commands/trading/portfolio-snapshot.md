@@ -25,7 +25,7 @@ Read the cached position document(s) and emit a status report via
 ## Workflow
 
 1. Read position documents from
-   `<plugin-data-dir>/data/positions/*.json` (filtered by `--index`).
+   `<data-dir>/positions/*.json` (filtered by `--index`).
 2. For each position, when `--include-pnl` is set, call
    `price(market_id, "1d")` and compute today's mid-based move on the
    position size.

@@ -31,9 +31,10 @@ def main() -> int:
     if csv_proc.returncode != 0:
         sys.stderr.write(csv_proc.stderr)
         return csv_proc.returncode
-    pub_args = [sys.executable, str(here / "datawrapper-publish.py"), args.chart_id]
     if args.no_publish:
-        pub_args.append("--no-publish")
+        sys.stdout.write(csv_proc.stdout)
+        return 0
+    pub_args = [sys.executable, str(here / "datawrapper-publish.py"), args.chart_id]
     pub = subprocess.run(pub_args, input=csv_proc.stdout, capture_output=True, text=True)
     sys.stdout.write(pub.stdout)
     sys.stderr.write(pub.stderr)

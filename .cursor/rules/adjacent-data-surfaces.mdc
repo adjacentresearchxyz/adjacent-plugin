@@ -1,0 +1,16 @@
+---
+description: Adjacent data-surface availability and safe fallback rules.
+globs: ["*.md", "*.py", "*.ts", "*.tsx", "*.json"]
+alwaysApply: true
+---
+
+# Adjacent data surfaces
+
+- Use docs, similar markets, candles, public snapshots, exports, and
+  news only when capability status marks them live.
+- `news/latest` is live. Pull it with `scripts/news-latest.py`, or
+  supply article JSON, then rank with `scripts/news-correlation.py`.
+- `indices/{id}/correlation` is unavailable. Regime analysis requires
+  supplied JSON.
+- Use mid-derived candle closes, never last trade, for tracking charts.
+- Never invent endpoint responses.
