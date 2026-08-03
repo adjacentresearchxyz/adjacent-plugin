@@ -1,4 +1,4 @@
-"""Tests for the Factory droid adapter (.factory/plugins/adjacent).
+"""Tests for the Factory droid adapter (.factory).
 
 Self-contained unittest, no third-party dependencies.
 Run: python -m unittest tests.adapters.test_factory -v
@@ -20,7 +20,7 @@ from tests.adapters._helpers import (
     read_file,
 )
 
-PACKAGE = ".factory/plugins/adjacent"
+PACKAGE = ".factory"
 
 # Host tool ids the hooks and droids are written against.
 WRITE_TOOLS = ("Create", "Edit", "ApplyPatch")

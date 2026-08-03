@@ -20,7 +20,7 @@ same code paths and catalogs.
 | Host | Package | Setup |
 | --- | --- | --- |
 | Claude Code | `plugins/adjacent` | [README](plugins/adjacent/README.md) |
-| Factory droid | `.factory/plugins/adjacent` | [README](.factory/plugins/adjacent/README.md) |
+| Factory droid | `.factory` | [README](.factory/README.md) |
 | Hermes | `.hermes` | [README](.hermes/README.md) |
 | Codex | `.codex` | [README](.codex/README.md) |
 | Cursor | `.cursor` | [README](.cursor/README.md) |

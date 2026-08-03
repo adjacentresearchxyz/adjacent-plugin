@@ -176,7 +176,7 @@ def assert_openclaw_contract() -> None:
 
 
 def assert_factory_contract() -> None:
-    package = ROOT / ".factory/plugins/adjacent"
+    package = ROOT / ".factory"
 
     marketplace = load_json(ROOT / ".factory-plugin/marketplace.json")
     entries = marketplace.get("plugins")
@@ -197,16 +197,16 @@ def assert_factory_contract() -> None:
     # and stdio env only, so an unexpanded url would authenticate as a literal.
     servers = load_json(package / "mcp.json").get("mcpServers")
     if not isinstance(servers, dict):
-        fail(".factory/plugins/adjacent/mcp.json must contain an mcpServers object")
+        fail(".factory/mcp.json must contain an mcpServers object")
     if {name: item.get("url") for name, item in servers.items()} != EXPECTED_BASE_URLS:
-        fail(".factory/plugins/adjacent/mcp.json MCP URLs do not match the shared endpoints")
+        fail(".factory/mcp.json MCP URLs do not match the shared endpoints")
     for name, item in servers.items():
         if item.get("type") != "http":
             fail(f"factory MCP server {name} must declare type http")
 
     hooks = load_json(package / "hooks/hooks.json").get("hooks")
     if not isinstance(hooks, dict) or not hooks:
-        fail(".factory/plugins/adjacent/hooks/hooks.json must define hooks by event")
+        fail(".factory/hooks/hooks.json must define hooks by event")
     for event, groups in hooks.items():
         if not isinstance(groups, list) or not groups:
             fail(f"factory hook event {event} must hold a list of matcher groups")
@@ -225,7 +225,7 @@ def assert_factory_contract() -> None:
 
     droids = {path.stem for path in (package / "droids").glob("*.md")}
     if droids != SHARED_ROLE_AGENTS:
-        fail(".factory/plugins/adjacent/droids must hold exactly the shared role agents")
+        fail(".factory/droids must hold exactly the shared role agents")
 
 
 def _skill_names(root: Path) -> set[str]:
@@ -246,7 +246,7 @@ def assert_skill_parity() -> None:
         canonical_bytes[name] = path.read_bytes()
     others = {
         ".hermes": ROOT / ".hermes/plugins/adjacent/skills",
-        ".factory": ROOT / ".factory/plugins/adjacent/skills",
+        ".factory": ROOT / ".factory/skills",
     }
 
     for other_root, other in others.items():

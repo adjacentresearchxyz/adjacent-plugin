@@ -1,5 +1,10 @@
 # Adjacent for droid
 
+This directory is both the installable plugin (its manifest lives in
+`.factory-plugin/plugin.json`) and this repo's project config: droid
+already reads `commands/`, `skills/`, and `droids/` from here when you
+work in the repo, so the package is live without installing it.
+
 ## Install
 
 ```bash

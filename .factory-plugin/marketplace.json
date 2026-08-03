@@ -21,7 +21,7 @@
       "repository": "https://github.com/adjacentresearchxyz/adjacent-plugin",
       "license": "MIT",
       "keywords": ["prediction-markets", "adjacent", "mcp", "datawrapper", "direct-index", "exchange"],
-      "source": "./.factory/plugins/adjacent"
+      "source": "./.factory"
     }
   ]
 }

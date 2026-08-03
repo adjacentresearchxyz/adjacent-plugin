@@ -7,7 +7,7 @@ from pathlib import Path
 
 from tests._hookutil import ROOT, load_hook
 
-PACKAGE = ".factory/plugins/adjacent"
+PACKAGE = ".factory"
 EM_DASH = chr(0x2014)
 
 
