@@ -17,6 +17,7 @@ PLUGIN_ROOT = os.path.normpath(
 
 CODEX_DIR = os.path.join(PLUGIN_ROOT, ".codex")
 CURSOR_DIR = os.path.join(PLUGIN_ROOT, ".cursor")
+FACTORY_DIR = os.path.join(PLUGIN_ROOT, ".factory", "plugins", "adjacent")
 
 # Expected agent names translated from plugins/adjacent/agents/*.md.
 EXPECTED_AGENTS = [

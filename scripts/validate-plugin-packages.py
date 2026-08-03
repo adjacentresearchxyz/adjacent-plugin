@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import tomllib
 from pathlib import Path
@@ -20,7 +21,12 @@ EXPECTED_SERVERS = {
     "adjacent-markets": "https://mcp.adjacent.markets/mcp?apiKey=${ADJACENT_API_KEY}",
     "adjacent-markets-dev": "https://mcp.dev.adjacent.markets/mcp?apiKey=${ADJACENT_API_KEY}",
 }
-CODEX_AGENTS = {
+# Endpoints without the apiKey query param, for hosts that cannot expand an
+# environment variable inside an MCP url.
+EXPECTED_BASE_URLS = {
+    name: url.split("?", 1)[0] for name, url in EXPECTED_SERVERS.items()
+}
+SHARED_ROLE_AGENTS = {
     "coordinator",
     "index-monitor",
     "data-monitor",
@@ -35,13 +41,21 @@ HOST_SPECIFIC_SKILLS = {
     "hermes": "documents this host's own runtime; the name is a foreign "
     "platform reference in the other package",
 }
+# Which host owns each package root. Adding a host means adding its roots
+# here; the forbidden-name sets below are derived, so no existing entry
+# needs editing and none can be forgotten.
+PACKAGE_HOST = {
+    ".claude-plugin": "claude",
+    "plugins/adjacent": "claude",
+    ".hermes": "hermes",
+    ".codex": "codex",
+    ".cursor": "cursor",
+    "openclaw-plugin": "openclaw",
+    ".factory": "factory",
+    ".factory-plugin": "factory",
+}
 PACKAGES = {
-    ".claude-plugin": {"hermes", "codex", "cursor", "openclaw"},
-    "plugins/adjacent": {"hermes", "codex", "cursor", "openclaw"},
-    ".hermes": {"claude", "codex", "cursor", "openclaw"},
-    ".codex": {"claude", "hermes", "cursor", "openclaw"},
-    ".cursor": {"claude", "hermes", "codex", "openclaw"},
-    "openclaw-plugin": {"claude", "hermes", "codex", "cursor"},
+    root: set(PACKAGE_HOST.values()) - {host} for root, host in PACKAGE_HOST.items()
 }
 TEXT_SUFFIXES = {".md", ".py", ".toml", ".yaml", ".json", ".ts"}
 HOST_NAMES = set().union(*PACKAGES.values())
@@ -116,7 +130,7 @@ def assert_codex_contract() -> None:
     if {name: item.get("url") for name, item in servers.items()} != EXPECTED_SERVERS:
         fail(".codex/config.toml MCP URLs do not match the shared contract")
     agents = config.get("agents")
-    if not isinstance(agents, dict) or set(agents) != CODEX_AGENTS:
+    if not isinstance(agents, dict) or set(agents) != SHARED_ROLE_AGENTS:
         fail(".codex/config.toml must declare exactly the shared role agents")
     for name, definition in agents.items():
         if not isinstance(definition, dict):
@@ -161,6 +175,59 @@ def assert_openclaw_contract() -> None:
             fail(f"OpenClaw MCP server {name} does not use the shared endpoint")
 
 
+def assert_factory_contract() -> None:
+    package = ROOT / ".factory/plugins/adjacent"
+
+    marketplace = load_json(ROOT / ".factory-plugin/marketplace.json")
+    entries = marketplace.get("plugins")
+    if not isinstance(entries, list) or len(entries) != 1:
+        fail(".factory-plugin/marketplace.json must list exactly one plugin")
+    source = entries[0].get("source")
+    if not isinstance(source, str) or (ROOT / source).resolve() != package.resolve():
+        fail(".factory-plugin/marketplace.json source does not point at the plugin package")
+
+    manifest = load_json(package / ".factory-plugin/plugin.json")
+    for field in ("name", "version", "description"):
+        if not manifest.get(field):
+            fail(f"factory plugin manifest is missing {field}")
+    if manifest["name"] != "adjacent":
+        fail("factory plugin manifest must use name adjacent")
+
+    # The apiKey cannot ride in the url: this host expands ${NAME} in headers
+    # and stdio env only, so an unexpanded url would authenticate as a literal.
+    servers = load_json(package / "mcp.json").get("mcpServers")
+    if not isinstance(servers, dict):
+        fail(".factory/plugins/adjacent/mcp.json must contain an mcpServers object")
+    if {name: item.get("url") for name, item in servers.items()} != EXPECTED_BASE_URLS:
+        fail(".factory/plugins/adjacent/mcp.json MCP URLs do not match the shared endpoints")
+    for name, item in servers.items():
+        if item.get("type") != "http":
+            fail(f"factory MCP server {name} must declare type http")
+
+    hooks = load_json(package / "hooks/hooks.json").get("hooks")
+    if not isinstance(hooks, dict) or not hooks:
+        fail(".factory/plugins/adjacent/hooks/hooks.json must define hooks by event")
+    for event, groups in hooks.items():
+        if not isinstance(groups, list) or not groups:
+            fail(f"factory hook event {event} must hold a list of matcher groups")
+        for group in groups:
+            if not group.get("matcher"):
+                fail(f"factory hook event {event} has a group without a matcher")
+            for entry in group.get("hooks", []):
+                if entry.get("type") != "command":
+                    fail(f"factory hook event {event} must use command hooks")
+                command = entry.get("command", "")
+                match = re.search(r"(hooks/[\w./-]+\.py)", command)
+                if not match:
+                    fail(f"factory hook command does not reference a script: {command}")
+                if not (package / match.group(1)).is_file():
+                    fail(f"factory hook script does not exist: {match.group(1)}")
+
+    droids = {path.stem for path in (package / "droids").glob("*.md")}
+    if droids != SHARED_ROLE_AGENTS:
+        fail(".factory/plugins/adjacent/droids must hold exactly the shared role agents")
+
+
 def _skill_names(root: Path) -> set[str]:
     if not root.is_dir():
         fail(f"skills directory does not exist: {root.relative_to(ROOT)}")
@@ -168,30 +235,42 @@ def _skill_names(root: Path) -> set[str]:
 
 
 def assert_skill_parity() -> None:
-    canonical = ROOT / "plugins/adjacent/skills"
-    other = ROOT / ".hermes/plugins/adjacent/skills"
+    canonical_root = "plugins/adjacent"
+    canonical = ROOT / canonical_root / "skills"
     canonical_names = _skill_names(canonical)
-    other_names = _skill_names(other)
+    canonical_bytes: dict[str, bytes] = {}
+    for name in sorted(canonical_names):
+        path = canonical / name / "SKILL.md"
+        if not path.is_file():
+            fail(f"skill {name!r} is missing {path.relative_to(ROOT)}")
+        canonical_bytes[name] = path.read_bytes()
+    others = {
+        ".hermes": ROOT / ".hermes/plugins/adjacent/skills",
+        ".factory": ROOT / ".factory/plugins/adjacent/skills",
+    }
 
-    for name in sorted(canonical_names.symmetric_difference(other_names)):
-        if name in HOST_SPECIFIC_SKILLS:
-            continue
-        present, absent = (
-            ("plugins/adjacent", ".hermes") if name in canonical_names else (".hermes", "plugins/adjacent")
-        )
-        fail(
-            f"skill {name!r} ships in {present} but not {absent}; add it to both "
-            f"or record it in HOST_SPECIFIC_SKILLS with a reason"
-        )
+    for other_root, other in others.items():
+        other_names = _skill_names(other)
 
-    for name in sorted(canonical_names & other_names):
-        canonical_path = canonical / name / "SKILL.md"
-        other_path = other / name / "SKILL.md"
-        for path in (canonical_path, other_path):
-            if not path.is_file():
-                fail(f"skill {name!r} is missing {path.relative_to(ROOT)}")
-        if canonical_path.read_bytes() != other_path.read_bytes():
-            fail(f"Shared skill has drifted between packages: {name}")
+        for name in sorted(canonical_names.symmetric_difference(other_names)):
+            if name in HOST_SPECIFIC_SKILLS:
+                continue
+            present, absent = (
+                (canonical_root, other_root)
+                if name in canonical_names
+                else (other_root, canonical_root)
+            )
+            fail(
+                f"skill {name!r} ships in {present} but not {absent}; add it to both "
+                f"or record it in HOST_SPECIFIC_SKILLS with a reason"
+            )
+
+        for name in sorted(canonical_names & other_names):
+            other_path = other / name / "SKILL.md"
+            if not other_path.is_file():
+                fail(f"skill {name!r} is missing {other_path.relative_to(ROOT)}")
+            if canonical_bytes[name] != other_path.read_bytes():
+                fail(f"Shared skill has drifted between packages: {name} ({other_root})")
 
 
 def assert_package_boundaries() -> None:
@@ -235,6 +314,7 @@ def main() -> None:
     assert_capability_contract()
     assert_codex_contract()
     assert_openclaw_contract()
+    assert_factory_contract()
     assert_skill_parity()
     assert_package_boundaries()
     assert_shared_assets_are_neutral()

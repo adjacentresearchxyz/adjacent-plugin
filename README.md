@@ -20,6 +20,7 @@ same code paths and catalogs.
 | Host | Package | Setup |
 | --- | --- | --- |
 | Claude Code | `plugins/adjacent` | [README](plugins/adjacent/README.md) |
+| Factory droid | `.factory/plugins/adjacent` | [README](.factory/plugins/adjacent/README.md) |
 | Hermes | `.hermes` | [README](.hermes/README.md) |
 | Codex | `.codex` | [README](.codex/README.md) |
 | Cursor | `.cursor` | [README](.cursor/README.md) |
@@ -27,9 +28,20 @@ same code paths and catalogs.
 
 ### Install
 
+Claude Code:
+
 ```
 /plugin marketplace add adjacentresearchxyz/adjacent-plugin
 /plugin install adjacent@adjacent-plugin
 ```
 
 Prefix every command with `adjacent:` (e.g. `/adjacent:briefing/morning`).
+
+Factory droid:
+
+```bash
+droid plugin marketplace add https://github.com/adjacentresearchxyz/adjacent-plugin
+droid plugin install adjacent@adjacent-plugin --scope user
+```
+
+Commands are flat and unprefixed (e.g. `/briefing-morning`).

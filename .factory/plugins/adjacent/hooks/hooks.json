@@ -1,0 +1,43 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Create|Edit|ApplyPatch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${DROID_PLUGIN_ROOT}/hooks/pre-tool-use/conventions.py\"",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Execute|Create|Edit|ApplyPatch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${DROID_PLUGIN_ROOT}/hooks/pre-tool-use/secret-redactor.py\"",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${DROID_PLUGIN_ROOT}/hooks/pre-tool-use/chart-style.py\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__.*__price",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${DROID_PLUGIN_ROOT}/hooks/post-tool-use/mover-logger.py\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

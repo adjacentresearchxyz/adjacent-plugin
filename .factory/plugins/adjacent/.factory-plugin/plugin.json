@@ -1,0 +1,20 @@
+{
+  "name": "adjacent",
+  "version": "0.3.0",
+  "description": "Adjacent prediction-market tools - skills, commands, hooks, droids, MCP servers.",
+  "author": {
+    "name": "Lucas Kohorst",
+    "email": "lucas@adjacentresearch.xyz"
+  },
+  "homepage": "https://adjacentresearch.xyz",
+  "repository": "https://github.com/adjacentresearchxyz/adjacent-plugin",
+  "license": "MIT",
+  "keywords": [
+    "prediction-markets",
+    "adjacent",
+    "mcp",
+    "datawrapper",
+    "direct-index",
+    "exchange"
+  ]
+}

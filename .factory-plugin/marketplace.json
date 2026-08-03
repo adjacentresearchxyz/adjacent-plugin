@@ -1,0 +1,27 @@
+{
+  "name": "adjacent-plugin",
+  "owner": {
+    "name": "Lucas Kohorst",
+    "email": "lucas@adjacentresearch.xyz"
+  },
+  "metadata": {
+    "description": "Plugin marketplace for the Adjacent prediction-market MCP - skills, commands, hooks, droids, and scripts for daily briefs, free-form Q&A, easy charting, and direct indexing to any connected exchange.",
+    "homepage": "https://adjacentresearch.xyz"
+  },
+  "plugins": [
+    {
+      "name": "adjacent",
+      "description": "Tools for the Adjacent prediction-market MCP server - daily briefs, index-mover scans, free-form /data-ask routing, Datawrapper publishing, and a parameterized direct-index rebalancer that targets any connected exchange (Kalshi today; others pluggable).",
+      "version": "0.3.0",
+      "author": {
+        "name": "Lucas Kohorst",
+        "email": "lucas@adjacentresearch.xyz"
+      },
+      "homepage": "https://adjacentresearch.xyz",
+      "repository": "https://github.com/adjacentresearchxyz/adjacent-plugin",
+      "license": "MIT",
+      "keywords": ["prediction-markets", "adjacent", "mcp", "datawrapper", "direct-index", "exchange"],
+      "source": "./.factory/plugins/adjacent"
+    }
+  ]
+}

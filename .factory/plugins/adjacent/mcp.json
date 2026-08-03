@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "adjacent-markets": {
+      "type": "http",
+      "url": "https://mcp.adjacent.markets/mcp",
+      "headers": {}
+    },
+    "adjacent-markets-dev": {
+      "type": "http",
+      "url": "https://mcp.dev.adjacent.markets/mcp",
+      "headers": {}
+    }
+  }
+}
