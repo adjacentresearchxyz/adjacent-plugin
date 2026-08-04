@@ -150,8 +150,10 @@ def assert_openclaw_contract() -> None:
         fail("OpenClaw manifest must use id adjacent-markets")
     tools = manifest.get("contracts", {}).get("tools")
     expected_tools = {
-        "adjacent_discover",
-        "adjacent_price",
+        "adjacent_doctor",
+        "adjacent_brief",
+        "adjacent_snapshot",
+        "adjacent_chart",
         "adjacent_movers",
         "adjacent_capabilities",
     }

@@ -24,6 +24,7 @@ from urllib.parse import urlencode, urlparse
 
 
 DEFAULT_HOST = "mcp.adjacent.markets"
+DEV_HOST = "mcp.dev.adjacent.markets"
 DEFAULT_PORT_TLS = 443
 PROTOCOL_VERSION = "2024-11-05"
 CLIENT_INFO = {"name": "adjacent-plugin", "version": "0.2"}
@@ -100,6 +101,68 @@ def _open_connection(parsed) -> http.client.HTTPConnection | http.client.HTTPSCo
             timeout=20,
         )
     return http.client.HTTPConnection(parsed.hostname, parsed.port or 80, timeout=20)
+
+
+class McpError(RuntimeError):
+    """Raised when a tools/call envelope carries an error instead of data."""
+
+
+def host_for_tier(tier: str) -> str:
+    """Map a tier label to its MCP host. Anything but 'prod' means dev."""
+    return DEFAULT_HOST if tier == "prod" else DEV_HOST
+
+
+def content_json(envelope: dict) -> Any:
+    """Unwrap a tools/call envelope into the payload the tool returned.
+
+    MCP wraps tool output in ``result.content[]`` text frames that hold
+    JSON. Callers want the data, not the transport, so this walks the
+    frames and returns the first decodable payload. Text that is not JSON
+    comes back as text; a transport or tool error raises.
+    """
+    if not isinstance(envelope, dict):
+        raise McpError("MCP response was not an object")
+    if "error" in envelope:
+        error = envelope["error"]
+        message = error.get("message") if isinstance(error, dict) else str(error)
+        raise McpError(str(message or "MCP call failed"))
+
+    result = envelope.get("result")
+    if not isinstance(result, dict):
+        raise McpError("MCP response carried no result")
+
+    content = result.get("content")
+    if isinstance(content, list):
+        for item in content:
+            if not isinstance(item, dict) or item.get("type") != "text":
+                continue
+            text = item.get("text", "")
+            try:
+                payload = json.loads(text)
+            except (json.JSONDecodeError, TypeError):
+                if result.get("isError"):
+                    raise McpError(str(text)[:300])
+                return text
+            if result.get("isError"):
+                raise McpError(str(payload)[:300])
+            return payload
+
+    if result.get("isError"):
+        raise McpError(str(result)[:300])
+    if "structuredContent" in result:
+        return result["structuredContent"]
+    return result
+
+
+def fetch(
+    tool: str,
+    args: dict,
+    tier: str = "dev",
+    api_key: str | None = None,
+    endpoint: str = "/mcp",
+) -> Any:
+    """Call one MCP tool on the given tier and return its unwrapped payload."""
+    return content_json(call(host_for_tier(tier), api_key, endpoint, tool, args))
 
 
 def call(

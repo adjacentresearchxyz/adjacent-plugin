@@ -36,11 +36,17 @@ OPENCLAW_DIR = os.path.join(_PLUGIN_ROOT, "openclaw-plugin")
 # Expected tool names - must match contracts.tools in the manifest and
 # the tool() declarations in src/index.ts.
 EXPECTED_TOOLS = [
-    "adjacent_discover",
-    "adjacent_price",
+    "adjacent_doctor",
+    "adjacent_brief",
+    "adjacent_snapshot",
+    "adjacent_chart",
     "adjacent_movers",
     "adjacent_capabilities",
 ]
+
+# The shared Python core bundled into the tarball so a clean install needs
+# no repo checkout.
+BUNDLED_DIRS = ["scripts", "data", "skills"]
 
 # Keywords that would indicate a trading or shell-execution capability -
 # forbidden in a read-only plugin.
@@ -371,6 +377,101 @@ class TestCrossFileConsistency(unittest.TestCase):
                 self.assertEqual(cfg.get("transport"), "stdio")
                 self.assertIn("command", cfg)
                 self.assertIn("args", cfg)
+
+
+class TestRuntimeSafety(unittest.TestCase):
+    """The runtime executes the shared core, so pin how it is allowed to do it.
+
+    Execution moved out of src/index.ts into src/runtime.ts. The safety
+    property is no longer "cannot execute" but "executes only allowlisted
+    scripts, with an argv array and the shell disabled".
+    """
+
+    def test_runtime_exists(self):
+        self.assertTrue(_file_exists("src/runtime.ts"))
+
+    def test_spawn_disables_the_shell(self):
+        text = _read("src/runtime.ts")
+        self.assertIn("shell: false", text, "runtime must spawn with the shell disabled")
+
+    def test_no_string_command_execution(self):
+        text = _read("src/runtime.ts")
+        for bad in ("execSync", "exec(", "spawnSync"):
+            with self.subTest(token=bad):
+                self.assertNotIn(bad, text, "runtime must not run a command string: %s" % bad)
+
+    def test_declares_a_script_allowlist(self):
+        text = _read("src/runtime.ts")
+        self.assertIn("ALLOWED_SCRIPTS", text)
+        self.assertIn("is not allowlisted", text)
+
+    def test_allowlist_excludes_order_placing_scripts(self):
+        """rebalance-index.py can place orders; it must never be reachable."""
+        text = _read("src/runtime.ts")
+        self.assertNotIn("rebalance-index.py", text)
+
+    def test_allowlisted_scripts_exist_in_the_repo(self):
+        text = _read("src/runtime.ts")
+        listed = re.findall(r'"([a-z0-9-]+\.py)"', text)
+        self.assertTrue(listed, "no scripts found in the allowlist")
+        for name in listed:
+            with self.subTest(script=name):
+                self.assertTrue(
+                    os.path.isfile(os.path.join(_PLUGIN_ROOT, "scripts", name)),
+                    "allowlisted script does not exist: %s" % name,
+                )
+
+    def test_prefers_env_overrides_then_bundle(self):
+        text = _read("src/runtime.ts")
+        self.assertIn("ADJACENT_PLUGIN_SCRIPTS", text)
+        self.assertIn("ADJACENT_PLUGIN_ROOT", text)
+        self.assertIn("runtime", text)
+
+    def test_state_dir_is_outside_the_package(self):
+        """Artifacts must not be written into node_modules."""
+        text = _read("src/runtime.ts")
+        self.assertIn("ADJACENT_STATE_DIR", text)
+        self.assertIn("process.cwd()", text)
+
+    def test_no_em_dash_or_emoji(self):
+        text = _read("src/runtime.ts")
+        self.assertEqual(assert_no_em_dash(text), [], "src/runtime.ts has em-dash")
+        self.assertEqual(assert_no_emoji(text), [], "src/runtime.ts has emoji")
+
+
+class TestBundling(unittest.TestCase):
+    """A clean install must carry the shared core, with no repo checkout."""
+
+    def test_bundler_exists(self):
+        self.assertTrue(_file_exists("scripts/bundle-runtime.mjs"))
+
+    def test_bundler_copies_core_and_skills(self):
+        text = _read("scripts/bundle-runtime.mjs")
+        for name in BUNDLED_DIRS:
+            with self.subTest(directory=name):
+                self.assertIn('"%s"' % name, text)
+
+    def test_bundler_excludes_the_repo_validator(self):
+        """The package validator is repo tooling, not runtime."""
+        text = _read("scripts/bundle-runtime.mjs")
+        self.assertIn("validate-plugin-packages.py", text)
+
+    def test_package_files_ships_the_runtime(self):
+        pkg = json.loads(_read("package.json"))
+        self.assertIn("runtime", pkg["files"], "files must ship the bundled runtime")
+        self.assertIn("dist", pkg["files"])
+
+    def test_prepack_builds_and_bundles(self):
+        pkg = json.loads(_read("package.json"))
+        prepack = pkg["scripts"].get("prepack", "")
+        self.assertIn("build", prepack, "prepack must compile dist")
+        self.assertIn("bundle", prepack, "prepack must bundle the shared core")
+
+    def test_bundled_layout_matches_the_path_helper(self):
+        """runtime/scripts + runtime/data is what _paths.py expects."""
+        text = _read("scripts/bundle-runtime.mjs")
+        self.assertIn('join(RUNTIME_DIR, "scripts")', text)
+        self.assertIn('join(RUNTIME_DIR, "data")', text)
 
 
 if __name__ == "__main__":
