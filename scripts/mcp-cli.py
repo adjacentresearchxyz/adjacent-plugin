@@ -22,6 +22,7 @@ import os
 import sys
 
 from _mcp import DEFAULT_HOST, call
+from _venue import fetch_quote
 
 
 ENTITY_TYPES = ["index", "rate", "event", "market", "news"]
@@ -65,6 +66,12 @@ def main() -> int:
         help="required entity type (index/rate/event/market)",
     )
     price_p.add_argument("--raw", action="store_true")
+    price_p.add_argument(
+        "--fallback-venue",
+        choices=["kalshi", "polymarket"],
+        help="on Adjacent failure, read a public venue orderbook for a prefixed market id",
+    )
+    price_p.add_argument("--side", choices=["yes", "no"], default="yes")
     # Accept legacy --slug flag as an alias for positional id clarity in docs.
     price_p.add_argument(
         "--slug",
@@ -102,6 +109,28 @@ def main() -> int:
         }
 
     res = call(args.host, api_key, args.endpoint, args.tool, tool_args)
+    if (
+        args.tool == "price"
+        and args.fallback_venue
+        and args.type == "market"
+        and isinstance(res, dict)
+        and "error" in res
+    ):
+        try:
+            quote = fetch_quote(entity_id, side=args.side)
+            if quote["venue"] != args.fallback_venue:
+                raise ValueError(
+                    f"market id venue is {quote['venue']}, not {args.fallback_venue}"
+                )
+            json.dump({"fallback": True, **quote}, sys.stdout, indent=2)
+            sys.stdout.write("\n")
+            return 0
+        except Exception as exc:  # noqa: BLE001 - report fallback failure
+            res = {
+                "error": {
+                    "message": f"Adjacent price failed and {args.fallback_venue} fallback failed: {exc}"
+                }
+            }
     json.dump(res, sys.stdout, indent=2)
     sys.stdout.write("\n")
     if "error" in res:

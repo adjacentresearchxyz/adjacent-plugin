@@ -20,16 +20,17 @@ DATAWRAPPER_API_KEY and is skipped without one.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import subprocess
 import sys
-import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
 from _mcp import McpError, fetch
-from _paths import scripts_dir, state_dir
+from _paths import data_dir, scripts_dir, state_dir
 
 
 def _run(argv: list[str], stdin_text: str | None = None) -> subprocess.CompletedProcess:
@@ -49,7 +50,7 @@ def _series_of(payload):
 
 
 def candles_csv(
-    entity_id: str,
+    entity_ids: list[str],
     entity_type: str,
     timeframe: str,
     tier: str,
@@ -57,34 +58,73 @@ def candles_csv(
     output: Path,
     rebase: bool,
 ) -> dict:
-    payload = fetch(
-        "price",
-        {"id": entity_id, "type": entity_type, "timeframe": timeframe, "raw": True},
-        tier=tier,
-        api_key=api_key,
-    )
-    series = _series_of(payload)
-    if not series:
-        return {"ok": False, "error": f"no timeseries returned for {entity_id}"}
+    def load_series(entity_id: str) -> tuple[str, list]:
+        payload = fetch(
+            "price",
+            {"id": entity_id, "type": entity_type, "timeframe": timeframe, "raw": True},
+            tier=tier,
+            api_key=api_key,
+        )
+        return entity_id, _series_of(payload)
 
-    script = scripts_dir() / "candles-chart.py"
-    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as tmp:
-        json.dump(series, tmp)
-        tmp_path = tmp.name
-    try:
-        argv = [sys.executable, str(script), "--input", tmp_path, "--output", str(output)]
+    series_by_id: dict[str, list] = {}
+    with ThreadPoolExecutor(max_workers=min(4, max(1, len(entity_ids)))) as executor:
+        for entity_id, series in executor.map(load_series, entity_ids):
+            if not series:
+                return {"ok": False, "error": f"no timeseries returned for {entity_id}"}
+            series_by_id[entity_id] = series
+
+    # candles-chart.py intentionally handles one series. Build an overlay
+    # here so all series share a timestamp axis and can be rebased together.
+    rows_by_ts: dict[str, dict[str, float]] = {}
+    for entity_id, series in series_by_id.items():
+        values = []
+        for row in series:
+            if not isinstance(row, dict):
+                continue
+            ts = row.get("ts") or row.get("timestamp") or row.get("time")
+            value = row.get("mid", row.get("close", row.get("value")))
+            if ts is not None and value is not None:
+                values.append((str(ts), float(value)))
+        if not values:
+            return {"ok": False, "error": f"no plottable timeseries returned for {entity_id}"}
         if rebase:
-            argv.append("--rebase")
-        proc = _run(argv)
-    finally:
-        os.unlink(tmp_path)
+            base = values[0][1]
+            if base == 0:
+                return {"ok": False, "error": f"cannot rebase zero-valued series for {entity_id}"}
+            values = [(ts, 100.0 * value / base) for ts, value in values]
+        for ts, value in values:
+            rows_by_ts.setdefault(ts, {})[entity_id] = value
 
-    if proc.returncode != 0:
-        return {"ok": False, "error": (proc.stderr.strip().split("\n") or ["candle build failed"])[-1]}
-    return {"ok": True, "points": len(series)}
+    with output.open("w", encoding="utf-8", newline="") as handle:
+        fieldnames = ["ts", *entity_ids]
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for ts in sorted(rows_by_ts):
+            writer.writerow({"ts": ts, **rows_by_ts[ts]})
+    return {"ok": True, "points": len(rows_by_ts), "series": len(entity_ids)}
 
 
 def tracking_csv(index: str, output: Path) -> dict:
+    positions = data_dir() / "positions"
+    # A clean OpenClaw install has no fills or cached tracking series. Fail
+    # before invoking chart-index.py so the caller gets a useful remedy.
+    required = [
+        positions / f"{index}.last_fill_ts",
+        positions / f"{index}.index.series.json",
+        positions / f"{index}.portfolio.series.json",
+    ]
+    missing = [str(path) for path in required if not path.exists()]
+    if missing:
+        return {
+            "ok": False,
+            "error": (
+                f"tracking data for {index!r} is not installed "
+                f"(missing {', '.join(missing)}). "
+                "Run a portfolio snapshot and populate the index/portfolio "
+                "series, or use the candles source with id=<index>."
+            ),
+        }
     script = scripts_dir() / "chart-index.py"
     proc = _run([sys.executable, str(script), "--index", index, "--output", str(output)])
     if proc.returncode != 0:
@@ -101,30 +141,44 @@ def render_png(csv_path: Path, png_path: Path, headline: str, deck: str) -> dict
         return {"ok": False, "error": f"chart style helper unavailable: {exc}"}
 
     try:
-        import csv as csv_module
-
-        xs: list[str] = []
-        ys: list[float] = []
+        columns: dict[str, list[float | None]] = {}
         with csv_path.open(encoding="utf-8") as handle:
-            for row in csv_module.DictReader(handle):
-                keys = list(row.keys())
-                if len(keys) < 2:
-                    continue
-                value = row[keys[1]]
-                if value in (None, ""):
-                    continue
-                xs.append(row[keys[0]])
-                ys.append(float(value))
-        if not ys:
+            rows = list(csv.DictReader(handle))
+        if not rows:
+            return {"ok": False, "error": "CSV held no plottable rows"}
+        keys = list(rows[0].keys())
+        for key in keys[1:]:
+            columns[key] = [
+                None if row.get(key) in (None, "") else float(row[key]) for row in rows
+            ]
+        if not any(any(value is not None for value in values) for values in columns.values()):
             return {"ok": False, "error": "CSV held no plottable rows"}
 
         fig, ax = adj.figure(headline=headline, deck=deck)
-        ax.plot(range(len(ys)), ys, color=adj.PALETTE["ink"])
+        legend_entries = [
+            (label, adj.SERIES[position % len(adj.SERIES)])
+            for position, label in enumerate(columns)
+        ]
+        for (label, color), values in zip(legend_entries, columns.values()):
+            xs = [i for i, value in enumerate(values) if value is not None]
+            ys = [value for value in values if value is not None]
+            ax.plot(xs, ys, color=color, label=label)
+        if len(columns) > 1:
+            adj.swatch_legend(fig, legend_entries)
         png_path.parent.mkdir(parents=True, exist_ok=True)
         adj.save(fig, str(png_path))
-        return {"ok": True, "points": len(ys)}
+        return {"ok": True, "points": len(rows), "series": len(columns)}
     except ImportError as exc:
-        return {"ok": False, "error": f"matplotlib not installed: {exc}"}
+        return {
+            "ok": False,
+            "error": f"matplotlib not installed: {exc}",
+            "remedy": (
+                "Install it in the Python runtime used by the plugin: "
+                "python3 -m pip install matplotlib. "
+                "For a clean install, create a virtual environment and set "
+                "ADJACENT_PYTHON to its python executable."
+            ),
+        }
     except Exception as exc:  # rendering is best-effort; never fail the CSV
         return {"ok": False, "error": f"render failed: {exc}"}
 
@@ -142,7 +196,8 @@ def publish(csv_path: Path, chart_id: str) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser(description="Build a chart artifact end to end.")
     ap.add_argument("--source", choices=["candles", "tracking"], default="candles")
-    ap.add_argument("--id", help="market or index id for the candles source")
+    ap.add_argument("--id", action="append", help="market or index id; repeat for overlays")
+    ap.add_argument("--ids", help="comma-separated market or index ids for overlays")
     ap.add_argument(
         "--type",
         default="market",
@@ -158,8 +213,12 @@ def main() -> int:
     ap.add_argument("--prod", action="store_true", help="use the realtime tier (needs a key)")
     args = ap.parse_args()
 
-    if args.source == "candles" and not args.id:
-        ap.error("--id is required for the candles source")
+    ids = list(args.id or [])
+    if args.ids:
+        ids.extend(part.strip() for part in args.ids.split(",") if part.strip())
+    ids = list(dict.fromkeys(ids))
+    if args.source == "candles" and not ids:
+        ap.error("--id or --ids is required for the candles source")
     if args.source == "tracking" and not args.index:
         ap.error("--index is required for the tracking source")
 
@@ -168,13 +227,13 @@ def main() -> int:
 
     out_dir = Path(args.output_dir).expanduser() if args.output_dir else state_dir() / "charts"
     out_dir.mkdir(parents=True, exist_ok=True)
-    stem = (args.index or args.id or "chart").replace(":", "-").replace("/", "-")
+    stem = (args.index or ids[0] or "chart").replace(":", "-").replace("/", "-")
     csv_path = out_dir / f"{stem}.csv"
 
     if args.source == "candles":
         try:
             built = candles_csv(
-                args.id, args.type, args.timeframe, tier, api_key, csv_path, args.rebase
+                ids, args.type, args.timeframe, tier, api_key, csv_path, args.rebase
             )
         except McpError as exc:
             built = {"ok": False, "error": str(exc)}
@@ -209,6 +268,8 @@ def main() -> int:
             result["artifacts"]["png"] = str(png_path)
         else:
             result["png_skipped"] = rendered.get("error")
+            if rendered.get("remedy"):
+                result["png_remedy"] = rendered["remedy"]
 
     if args.datawrapper_chart_id:
         published = publish(csv_path, args.datawrapper_chart_id)

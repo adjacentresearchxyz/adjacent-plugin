@@ -48,18 +48,18 @@ load it. Summary:
 
 - Title: short, Inter, no em-dash, no emoji.
 - Intro: 1 sentence, the `--font-serif` generic.
-- Source line: `Source: <publisher>, mid-quote`.
+- Source line: `Source: Adjacent`.
 - All numbers: `0.00%` format. Never `pp`.
-- Background: `#ece9e2` (canvas); plot area `#ffffff`.
+- Background: `#ece9e2` for both canvas and plot area.
 - Base / text color: `#0a0f0d`; secondary `#5c5a53`; meta `#7f7d7a`.
 - Axis + grid lines: `#d6d2c8` / `#ecebea`.
-- Series colors, in order: `#3fae5a`, `#e66b55`, `#6fb7e0`, `#d89a3f`,
-  `#a8c49a`, `#f0a8c8`. Up/positive `#3fae5a`; down/negative `#e66b55`.
+- Series colors, in order: `#3fae5a`, `#e87d2a`, `#4a90d9`, `#b85cce`,
+  `#a8c49a`, `#f0a8c8`. Up/positive `#3fae5a`; down/negative `#c0392b`.
 - Data labels: the `--font-mono` generic, tabular.
 - Square corners; no rounded elements.
 
-Apply these in the metadata PATCH (see the `adjacent-chart-style` skill
-for the full field map). The `conventions` hook checks the text payload
+Apply these through `scripts/_datawrapper.py::brand_chart` (see the
+`adjacent-chart-style` skill for the full field map). The `conventions` hook checks the text payload
 for em-dash / `pp` / emoji; the `chart-style` hook guards against
 non-Adjacent palettes in any Python chart fallback.
 

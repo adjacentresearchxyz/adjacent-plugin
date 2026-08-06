@@ -183,6 +183,23 @@ MCP_QUERY = _schema(
                 "default": False,
                 "description": "Return raw timeseries for `price`.",
             },
+            "fallback_venue": {
+                "type": "string",
+                "enum": ["kalshi", "polymarket"],
+                "description": (
+                    "Optional read-only fallback for a market price when "
+                    "Adjacent MCP fails. Requires a prefixed market id."
+                ),
+            },
+            "side": {
+                "type": "string",
+                "enum": ["yes", "no"],
+                "default": "yes",
+                "description": (
+                    "Outcome side for a Kalshi fallback quote. Ignored for "
+                    "Polymarket and normal Adjacent price calls."
+                ),
+            },
         },
         required=["tool"],
         extra=False,

@@ -17,7 +17,7 @@ import json
 import os
 import sys
 
-from _datawrapper import post, read_csv
+from _datawrapper import brand_chart, post, read_csv
 
 
 def main() -> int:
@@ -27,6 +27,11 @@ def main() -> int:
         return 1
     ap = argparse.ArgumentParser()
     ap.add_argument("--title", required=True)
+    ap.add_argument(
+        "--intro",
+        default="Adjacent chart generated from mid-quote data.",
+        help="one-sentence chart introduction",
+    )
     ap.add_argument("--csv", help="path to a CSV file; default reads stdin")
     args = ap.parse_args()
     try:
@@ -58,6 +63,16 @@ def main() -> int:
         json.dump(upload, sys.stdout, indent=2)
         sys.stdout.write("\n")
         return 4
+    branded = brand_chart(
+        api_key,
+        str(chart_id),
+        title=args.title,
+        intro=args.intro,
+    )
+    if "error" in branded:
+        json.dump({"stage": "brand", **branded}, sys.stdout, indent=2)
+        sys.stdout.write("\n")
+        return 5
     json.dump({"chart_id": chart_id, "public_url": f"https://datawrapper.de/chart/{chart_id}"}, sys.stdout, indent=2)
     sys.stdout.write("\n")
     return 0
