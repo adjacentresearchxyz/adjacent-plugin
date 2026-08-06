@@ -156,6 +156,27 @@ The reusable Python helper is
 matplotlib/seaborn theme, the Plotly template, and the source-line
 stamper. Prefer it over re-deriving values by hand.
 
+Source of truth and precedence (charting):
+
+1. The executable behavior and public exports in
+   `scripts/adjacent_chart_style.py` - the canonical helper.
+2. This `AGENTS.md` section (writing rules + safety).
+3. The host chart-style skills (`.factory`, `.hermes`, `plugins`) and
+   `docs/charting-plugin-update.md`, which describe the helper.
+4. Individual producer scripts.
+
+Do not inline the helper source, palette values, or API into Markdown,
+and do not fork the helper API in a host skill. Reference the helper by
+its repository-relative path (`scripts/adjacent_chart_style.py`); an
+installed runtime path may be mentioned as an example but must not be
+the only path. When the helper changes, update this section, the three
+host skill copies, and `tests/test_chart_style_contract.py` together.
+Resolved rules: keep the six-color `SERIES` cycle (green, orange, blue,
+purple, sage, pink), keep `Source: Adjacent` as the default source
+string (no timestamp), do not require an x-axis title when the deck or
+context already communicates the unit, and label bars outside by
+default with explicit exceptions for large stacked segments.
+
 On-brand summary (see the skill for the full table):
 
 - Canvas `#ece9e2` (figure and plot area - one surface); paper

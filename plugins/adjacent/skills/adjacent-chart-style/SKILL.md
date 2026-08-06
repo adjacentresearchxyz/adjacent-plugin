@@ -21,6 +21,42 @@ The reusable Python helper lives at
 palette, the matplotlib/seaborn theme, the Plotly template, and the
 source-line stamper. Prefer it over re-deriving values by hand.
 
+## Source of truth and precedence
+
+1. The executable behavior and public exports in
+   `scripts/adjacent_chart_style.py` - the canonical helper.
+2. `AGENTS.md` (writing rules + safety).
+3. This skill and the other host chart-style skill copies
+   (`.factory`, `.hermes/plugins/adjacent`, `plugins/adjacent`), plus
+   `docs/charting-plugin-update.md`.
+4. Individual producer scripts.
+
+Do not inline the helper source, palette values, or API into this
+skill, and do not fork the helper API in a host package. Reference the
+helper by its repository-relative path
+(`scripts/adjacent_chart_style.py`); an installed runtime path may be
+mentioned as an example but must not be the only path. The palette and
+series cycle below mirror the helper - if they disagree, the helper
+wins, and this skill, `AGENTS.md`, the other two host copies, and
+`tests/test_chart_style_contract.py` must be updated together.
+
+Resolved rules (do not change without updating the helper first):
+
+- `SOURCE_DEFAULT` is exactly `Source: Adjacent` - no timestamp, no
+  basis clause, no wordmark, no divider.
+- The `SERIES` cycle is green, chart-orange, chart-blue, chart-purple,
+  sage, pink (the `ChartRenderer` default cycle).
+- A lone series is off-black; color distinguishes categories or signs,
+  never a lone line by direction.
+- No x-axis title is required when the deck or chart context already
+  communicates the unit.
+- Bar value labels sit outside the bar by default, with an explicit
+  exception for sufficiently large stacked segments.
+- Fonts are Inter (main), the `--font-serif` / `--font-mono` CSS
+  generic stacks - never Lora or IBM Plex Mono.
+- Candles are Heikin-Ashi only, never raw candlesticks.
+- All pricing is mid-quote; `%` never `pp`; no em-dash, no emoji.
+
 ## The one-line rule
 
 An Adjacent chart is an editorial graphic, not a plot. It leads with a
