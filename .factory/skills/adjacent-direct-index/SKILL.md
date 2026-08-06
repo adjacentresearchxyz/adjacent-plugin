@@ -28,6 +28,23 @@ plug in without rewriting this skill.
 Tracking uses mid-quote pricing end-to-end. Tracking_error =
 `(mid_portfolio_return - mid_index_return)` expressed in `%`.
 
+## Live pricing fallback
+
+Adjacent MCP is always the primary source. If a market `price` call fails,
+the agent may request an explicit read-only venue fallback through
+`mcp-cli.py price ... --fallback-venue <venue>`. The market id must carry the
+venue prefix (`kalshi:<ticker>` or `polymarket:<token_id>`). The fallback
+returns bid, ask, and mid and must be labeled with `venue` and
+`basis: mid-quote`.
+
+- Kalshi uses the public V2 orderbook and derives the YES ask from the best
+  NO bid, or vice versa.
+- Polymarket uses the public CLOB orderbook and takes the best bid and ask.
+- A fallback is valid for a current quote only. Do not substitute it for
+  Adjacent historical index series.
+- If either side is missing, fail closed and stop the buy queue.
+- Never use last trade as a fallback for tracking, sizing, or P&L.
+
 ## Files of record
 
 - `<data-dir>/adjacent_direct_indices.json`: **trading

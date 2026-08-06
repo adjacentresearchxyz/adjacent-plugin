@@ -178,6 +178,10 @@ def _mcp_query_argv(params: dict[str, Any]) -> list[str]:
         argv += [str(ident), str(timeframe), "--type", str(entity_type)]
         if params.get("raw"):
             argv.append("--raw")
+        if params.get("fallback_venue"):
+            argv += ["--fallback-venue", str(params["fallback_venue"])]
+        if params.get("side"):
+            argv += ["--side", str(params["side"])]
     return argv
 
 

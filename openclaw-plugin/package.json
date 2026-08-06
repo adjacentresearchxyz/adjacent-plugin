@@ -8,6 +8,7 @@
   "files": [
     "dist",
     "runtime",
+    "src",
     "openclaw.plugin.json",
     "README.md"
   ],
@@ -38,6 +39,7 @@
       "./dist/index.js"
     ],
     "runtimeExtensions": [
+      "./src/index.ts",
       "./dist/index.js"
     ],
     "compat": {

@@ -19,7 +19,7 @@ import sys
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from _datawrapper import post, read_csv
+from _datawrapper import brand_chart, post, read_csv
 
 
 ET = ZoneInfo("America/New_York")
@@ -34,6 +34,8 @@ def main() -> int:
     ap.add_argument("chart_id")
     ap.add_argument("--csv", help="path to a CSV file; default reads stdin")
     ap.add_argument("--no-publish", action="store_true")
+    ap.add_argument("--title", default="Adjacent chart")
+    ap.add_argument("--intro", default="Adjacent chart generated from mid-quote data.")
     args = ap.parse_args()
     try:
         csv_bytes = read_csv(args.csv)
@@ -50,6 +52,16 @@ def main() -> int:
         json.dump({"stage": "data", **r1}, sys.stdout, indent=2)
         sys.stdout.write("\n")
         return 3
+    branded = brand_chart(
+        api_key,
+        args.chart_id,
+        title=args.title,
+        intro=args.intro,
+    )
+    if "error" in branded:
+        json.dump({"stage": "brand", **branded}, sys.stdout, indent=2)
+        sys.stdout.write("\n")
+        return 5
     if not args.no_publish:
         r2 = post(
             api_key,

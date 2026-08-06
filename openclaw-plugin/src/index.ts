@@ -274,6 +274,9 @@ export default defineToolPlugin({
         "Returns artifact paths. The candles source needs no local data.",
       parameters: Type.Object({
         id: Type.Optional(Type.String({ description: "Market or index id for the candles source." })),
+        ids: Type.Optional(
+          Type.String({ description: "Comma-separated market or index ids to overlay." }),
+        ),
         type: Type.Optional(
           Type.String({ description: "Entity type for the candles source.", enum: ["market", "index", "event", "rate"] }),
         ),
@@ -287,17 +290,22 @@ export default defineToolPlugin({
           Type.String({ description: "Publish the CSV to this Datawrapper chart id." }),
         ),
       }),
-      async execute({ id, type, timeframe, index, png, rebase, datawrapperChartId }, config) {
+      async execute({ id, ids, type, timeframe, index, png, rebase, datawrapperChartId }, config) {
         applyKey(config);
-        if (!id && !index) {
-          return { ok: false, error: "pass id (candles source) or index (tracking source)" };
+        if (!id && !ids && !index) {
+          return { ok: false, error: "pass id/ids (candles source) or index (tracking source)" };
+        }
+        if (index && (id || ids)) {
+          return { ok: false, error: "pass either index or id/ids, not both" };
         }
 
         const args = [...tierFlag(config)];
         if (index) {
           args.push("--source", "tracking", "--index", index);
         } else {
-          args.push("--source", "candles", "--id", String(id));
+          args.push("--source", "candles");
+          if (id) args.push("--id", id);
+          if (ids) args.push("--ids", ids);
           if (type) args.push("--type", type);
           if (timeframe) args.push("--timeframe", timeframe);
         }
