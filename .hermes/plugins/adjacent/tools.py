@@ -97,6 +97,8 @@ class _ScriptAllowlist(dict):
 # forces non-placing flags.
 ALLOWED_SCRIPTS: _ScriptAllowlist = _ScriptAllowlist(
     [
+        "brief-daily.py",
+        "market-snapshot.py",
         "portfolio-snapshot.py",
         "tracking-index.py",
         "chart-index.py",
@@ -122,6 +124,57 @@ class WorkflowError(ValueError):
 
 
 # --- argv builders --------------------------------------------------------
+
+
+def _brief_daily_argv(params: dict[str, Any]) -> list[str]:
+    argv: list[str] = [ALLOWED_SCRIPTS["brief-daily.py"]]
+    if params.get("slugs"):
+        argv += ["--slugs", str(params["slugs"])]
+    if params.get("with_news"):
+        argv.append("--with-news")
+    if "limit" in params:
+        argv += ["--limit", str(params["limit"])]
+    if params.get("prod"):
+        argv.append("--prod")
+    if params.get("output"):
+        argv += ["--output", str(params["output"])]
+    return argv
+
+
+def _market_snapshot_argv(params: dict[str, Any]) -> list[str]:
+    argv: list[str] = [ALLOWED_SCRIPTS["market-snapshot.py"]]
+    selectors = [params.get("query"), params.get("index"), params.get("ids")]
+    found = [s for s in selectors if s]
+    if len(found) != 1:
+        raise WorkflowError("market_snapshot requires exactly one of query, index, or ids")
+    if params.get("ids"):
+        argv += ["--ids", str(params["ids"])]
+    elif params.get("index"):
+        argv += ["--index", str(params["index"])]
+    elif params.get("query"):
+        argv += ["--query", str(params["query"])]
+    if "limit" in params:
+        argv += ["--limit", str(params["limit"])]
+    if params.get("timeframe"):
+        argv += ["--timeframe", str(params["timeframe"])]
+    if params.get("quotes"):
+        argv.append("--quotes")
+    if params.get("csv"):
+        argv += ["--csv", str(params["csv"])]
+    if params.get("prod"):
+        argv.append("--prod")
+    return argv
+
+
+def _movers_argv(params: dict[str, Any]) -> list[str]:
+    argv: list[str] = [ALLOWED_SCRIPTS["brief-daily.py"]]
+    if params.get("slugs"):
+        argv += ["--slugs", str(params["slugs"])]
+    if "limit" in params:
+        argv += ["--limit", str(params["limit"])]
+    if params.get("prod"):
+        argv.append("--prod")
+    return argv
 
 
 def _portfolio_snapshot_argv(params: dict[str, Any]) -> list[str]:
@@ -313,6 +366,9 @@ def _http_get_argv(params: dict[str, Any]) -> list[str]:
 
 # workflow name -> (schema key, argv builder)
 ALLOWED_WORKFLOWS: dict[str, tuple[str, Any]] = {
+    "brief_daily": ("adjacent_brief_daily", _brief_daily_argv),
+    "market_snapshot": ("adjacent_market_snapshot", _market_snapshot_argv),
+    "movers": ("adjacent_movers", _movers_argv),
     "portfolio_snapshot": ("adjacent_portfolio_snapshot", _portfolio_snapshot_argv),
     "tracking": ("adjacent_tracking", _tracking_argv),
     "chart_csv": ("adjacent_chart_csv", _chart_csv_argv),
@@ -449,6 +505,18 @@ def _json(result: dict[str, Any]) -> str:
     return json.dumps(result, ensure_ascii=True)
 
 
+def adjacent_brief_daily(args: dict, **kwargs: Any) -> str:
+    return _json(run_workflow("brief_daily", args))
+
+
+def adjacent_market_snapshot(args: dict, **kwargs: Any) -> str:
+    return _json(run_workflow("market_snapshot", args))
+
+
+def adjacent_movers(args: dict, **kwargs: Any) -> str:
+    return _json(run_workflow("movers", args))
+
+
 def adjacent_portfolio_snapshot(args: dict, **kwargs: Any) -> str:
     return _json(run_workflow("portfolio_snapshot", args))
 
@@ -515,6 +583,9 @@ def adjacent_http_get(args: dict, **kwargs: Any) -> str:
 
 # Registry: tool name -> handler callable. Used by __init__.py.
 TOOL_HANDLERS: dict[str, Any] = {
+    "adjacent_brief_daily": adjacent_brief_daily,
+    "adjacent_market_snapshot": adjacent_market_snapshot,
+    "adjacent_movers": adjacent_movers,
     "adjacent_portfolio_snapshot": adjacent_portfolio_snapshot,
     "adjacent_tracking": adjacent_tracking,
     "adjacent_chart_csv": adjacent_chart_csv,

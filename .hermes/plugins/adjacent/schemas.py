@@ -78,6 +78,85 @@ def _schema(name: str, description: str, parameters: dict) -> dict:
 
 # Tool schemas -------------------------------------------------------------
 
+BRIEF_DAILY = _schema(
+    "adjacent_brief_daily",
+    (
+        "Run the Adjacent daily brief: resolve the watchlist, fetch mid-quote "
+        "moves, apply the 1D and 7D mover thresholds, and return both the "
+        "structured movers and the formatted brief text. Read-only. Wraps "
+        "scripts/brief-daily.py."
+    ),
+    _object(
+        {
+            "slugs": {
+                "type": "string",
+                "description": "Comma-separated index slugs. Omit to use the watchlist or a live list.",
+            },
+            "with_news": {"type": "boolean", "default": False},
+            "limit": {"type": "integer", "default": 10, "minimum": 1},
+            "prod": {"type": "boolean", "default": False},
+            "output": _OUTPUT_PATH,
+        },
+        required=[],
+        extra=False,
+    ),
+)
+
+MARKET_SNAPSHOT = _schema(
+    "adjacent_market_snapshot",
+    (
+        "Build a normalized tradable market snapshot from a topic, an index, "
+        "or explicit ids. Every row carries mid, bid, ask, spread, 24h volume, "
+        "and the 1D move in the same units. Wraps scripts/market-snapshot.py."
+    ),
+    _object(
+        {
+            "query": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Free-text topic to resolve into markets.",
+            },
+            "index": _SLUG,
+            "ids": {
+                "type": "string",
+                "description": "Comma-separated ids in platform:raw form.",
+            },
+            "limit": {"type": "integer", "default": 25, "minimum": 1},
+            "timeframe": {
+                "type": "string",
+                "default": "24h",
+                "description": "Quote timeframe (default 24h).",
+            },
+            "quotes": {"type": "boolean", "default": False},
+            "csv": _OUTPUT_PATH,
+            "prod": {"type": "boolean", "default": False},
+        },
+        required=[],
+        extra=False,
+    ),
+)
+
+MOVERS = _schema(
+    "adjacent_movers",
+    (
+        "Scan indices for threshold-crossing mid-quote moves and return the "
+        "sorted movers with thresholds applied. The brief without the prose. "
+        "Wraps scripts/brief-daily.py."
+    ),
+    _object(
+        {
+            "slugs": {
+                "type": "string",
+                "description": "Comma-separated index slugs to scan.",
+            },
+            "limit": {"type": "integer", "default": 10, "minimum": 1},
+            "prod": {"type": "boolean", "default": False},
+        },
+        required=[],
+        extra=False,
+    ),
+)
+
 PORTFOLIO_SNAPSHOT = _schema(
     "adjacent_portfolio_snapshot",
     (
@@ -490,6 +569,9 @@ TOPIC_BRIEF = _schema(
 # Registry exposed to tools.py / __init__.py. Keys are the tool names
 # registered with the host; values are the Hermes-shaped schema dicts.
 TOOL_SCHEMAS: dict[str, dict] = {
+    "adjacent_brief_daily": BRIEF_DAILY,
+    "adjacent_market_snapshot": MARKET_SNAPSHOT,
+    "adjacent_movers": MOVERS,
     "adjacent_portfolio_snapshot": PORTFOLIO_SNAPSHOT,
     "adjacent_tracking": TRACKING,
     "adjacent_chart_csv": CHART_CSV,
