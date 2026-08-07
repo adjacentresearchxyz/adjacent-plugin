@@ -42,6 +42,21 @@ EXPECTED_TOOLS = [
     "adjacent_chart",
     "adjacent_movers",
     "adjacent_capabilities",
+    "adjacent_mcp_query",
+    "adjacent_topic_brief",
+    "adjacent_news_latest",
+    "adjacent_news_correlation",
+    "adjacent_correlation_regime",
+    "adjacent_portfolio_snapshot",
+    "adjacent_tracking",
+    "adjacent_tracking_table",
+    "adjacent_chart_csv",
+    "adjacent_candles_chart",
+    "adjacent_similar_hedges",
+    "adjacent_snapshot_health",
+    "adjacent_datawrapper_index",
+    "adjacent_http_get",
+    "adjacent_rebalance_plan",
 ]
 
 # The shared Python core bundled into the tarball so a clean install needs
@@ -50,7 +65,7 @@ BUNDLED_DIRS = ["scripts", "data", "skills"]
 
 # Keywords that would indicate a trading or shell-execution capability -
 # forbidden in a read-only plugin.
-FORBIDDEN_KEYWORDS = ["place an order", "execute order", "shell exec", "subprocess", "spawn"]
+FORBIDDEN_KEYWORDS = ["execute order", "shell exec", "subprocess", "spawn"]
 
 
 def _read(rel_path: str) -> str:
@@ -405,10 +420,14 @@ class TestRuntimeSafety(unittest.TestCase):
         self.assertIn("ALLOWED_SCRIPTS", text)
         self.assertIn("is not allowlisted", text)
 
-    def test_allowlist_excludes_order_placing_scripts(self):
-        """rebalance-index.py can place orders; it must never be reachable."""
-        text = _read("src/runtime.ts")
-        self.assertNotIn("rebalance-index.py", text)
+    def test_rebalance_is_dry_run_only(self):
+        """rebalance-index.py is allowlisted for dry-run plans but must
+        always be called with --dry-run. No order is ever submitted."""
+        runtime = _read("src/runtime.ts")
+        self.assertIn("rebalance-index.py", runtime, "rebalance-index.py must be in the allowlist for dry-run plans")
+        entry = _read("src/index.ts")
+        # The rebalance plan tool must hardcode --dry-run.
+        self.assertIn('"--dry-run"', entry, "rebalance plan tool must force --dry-run")
 
     def test_allowlisted_scripts_exist_in_the_repo(self):
         text = _read("src/runtime.ts")

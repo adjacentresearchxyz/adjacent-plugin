@@ -41,6 +41,9 @@ BUNDLED_SKILLS: dict[str, str] = {
 
 # Workflow name -> tool handler callable, used by the /adjacent command.
 _WORKFLOW_TOOLS: dict[str, Any] = {
+    "brief_daily": _tools.adjacent_brief_daily,
+    "market_snapshot": _tools.adjacent_market_snapshot,
+    "movers": _tools.adjacent_movers,
     "portfolio_snapshot": _tools.adjacent_portfolio_snapshot,
     "tracking": _tools.adjacent_tracking,
     "chart_csv": _tools.adjacent_chart_csv,
@@ -68,6 +71,9 @@ _HELP_TEXT = (
     "  /adjacent workflow <name> [--flag value ...]\n"
     "\n"
     "Workflows:\n"
+    "  brief_daily          daily brief with movers and text\n"
+    "  market_snapshot      tradable snapshot from topic/index/ids\n"
+    "  movers               threshold movers scan (no prose)\n"
     "  portfolio_snapshot   read-only portfolio status\n"
     "  tracking             per-row mid-based tracking error\n"
     "  chart_csv            build a chart CSV\n"
