@@ -29,7 +29,6 @@ import {
   resolveScriptsDir,
   resolveStateDir,
   runJsonScript,
-  runScript,
   runtimeIsInstalled,
 } from "./runtime.js";
 
@@ -99,7 +98,11 @@ export default defineToolPlugin({
           remedy?: string;
         }> = [];
 
-        const python = await runScript("capability-status.py", ["--json"], { timeoutMs: 20_000 });
+        const python = await runJsonScript<{ intro_text?: string }>(
+          "capability-status.py",
+          ["--json"],
+          { timeoutMs: 20_000 },
+        );
         checks.push(
           python.ok
             ? { name: "python", status: "ok", detail: `${resolvePython()} ran the shared core` }
@@ -161,6 +164,9 @@ export default defineToolPlugin({
         checks.push({ name: "artifacts", status: "ok", detail: `writing to ${stateDir}` });
 
         const failed = checks.filter((c) => c.status === "fail");
+        // On a healthy install, relay this intro to the user verbatim before
+        // the technical report - it is the first-use onboarding message.
+        const intro = failed.length === 0 && python.ok ? python.data?.intro_text : undefined;
         return {
           ok: failed.length === 0,
           ready: failed.length === 0,
@@ -168,6 +174,11 @@ export default defineToolPlugin({
           scriptsDir,
           stateDir,
           checks,
+          intro,
+          relay_intro:
+            intro !== undefined
+              ? "Relay the intro field to the user verbatim before the technical summary."
+              : undefined,
           summary:
             failed.length === 0
               ? `Ready on the ${tier} tier. ${checks.filter((c) => c.status === "warn").length} optional item(s) unconfigured.`
@@ -388,7 +399,10 @@ export default defineToolPlugin({
         "read from the capability catalog that ships with this install.",
       parameters: Type.Object({}),
       async execute() {
-        const result = await runJsonScript<{ capabilities?: Record<string, { api_status?: string; plugin_status?: string }> }>(
+        const result = await runJsonScript<{
+          capabilities?: Record<string, { api_status?: string; plugin_status?: string }>;
+          intro_text?: string;
+        }>(
           "capability-status.py",
           ["--json"],
           { timeoutMs: 20_000 },
@@ -402,7 +416,7 @@ export default defineToolPlugin({
         for (const [name, entry] of Object.entries(capabilities)) {
           (entry.api_status === "live" ? live : unavailable).push(name);
         }
-        return { ok: true, live, unavailable, capabilities };
+        return { ok: true, intro: result.data?.intro_text, live, unavailable, capabilities };
       },
     }),
 

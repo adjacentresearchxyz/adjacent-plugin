@@ -239,6 +239,14 @@ class TestEntrypoint(unittest.TestCase):
         text = _read("src/index.ts")
         self.assertIn('id: "adjacent-markets"', text)
 
+    def test_doctor_and_capabilities_surface_intro(self):
+        """The install-time verification tools must carry the onboarding
+        intro so it fires during install->verify->report, not only when a
+        skill happens to load."""
+        text = _read("src/index.ts")
+        self.assertIn("intro_text", text, "doctor/capabilities must read intro_text from the shared core")
+        self.assertIn("relay_intro", text, "doctor must instruct relaying the intro")
+
     def test_no_order_placement(self):
         text = _read("src/index.ts").lower()
         for bad in FORBIDDEN_KEYWORDS:

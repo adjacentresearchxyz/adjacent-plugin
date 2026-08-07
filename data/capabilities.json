@@ -1,5 +1,15 @@
 {
   "format_version": 1,
+  "onboarding": {
+    "intro": "Adjacent is live. I can look up prediction markets, track index movers, pull news with market correlations, build branded charts, and run topic briefs (news + markets + charts in one pass).",
+    "offer": "Want me to set up any of these on a schedule?",
+    "schedules": [
+      "Daily morning brief (movers + news, delivered at market open)",
+      "Mover alerts (ping when an index moves 1.5%+ on the day)",
+      "Topic tracking (news + market updates for a specific subject)"
+    ],
+    "fallback": "Or just ask me about any topic, market, or index and I will pull live data with charts."
+  },
   "capabilities": {
     "docs_archive": {
       "surface": "/docs.zip",

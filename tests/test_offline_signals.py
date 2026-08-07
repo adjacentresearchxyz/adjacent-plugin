@@ -35,6 +35,38 @@ def test_capability_status_reflects_live_news_and_offline_correlation():
     assert "rates_oracles" not in capabilities
 
 
+def test_capability_status_json_carries_onboarding_intro():
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "capability-status.py"), "--json"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    payload = json.loads(result.stdout)
+    assert "intro_text" in payload
+    intro = payload["intro_text"]
+    assert "Adjacent is live." in intro
+    # Each scheduled workflow renders as an ASCII bullet the agent can relay.
+    assert "- Daily morning brief" in intro
+    assert "- Mover alerts" in intro
+    # Writing conventions: no percentage-points, no em-dash.
+    assert "pp" not in intro
+    assert "\u2014" not in intro
+
+
+def test_capability_status_intro_flag_prints_only_intro():
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "capability-status.py"), "--intro"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert result.stdout.startswith("Adjacent is live.")
+    # The intro-only path must not leak the capability status lines.
+    assert "api_status" not in result.stdout
+    assert "news_latest:" not in result.stdout
+
+
 def test_shared_data_dir_defaults_to_repository_root(monkeypatch):
     monkeypatch.delenv("ADJACENT_DATA_DIR", raising=False)
     monkeypatch.delenv("ADJACENT_PLUGIN_ROOT", raising=False)
