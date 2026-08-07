@@ -461,11 +461,19 @@ def run_brief(
     output_dir: Path | None,
 ) -> dict:
     warnings: list[str] = []
-    news, news_warnings = find_news(topic, tier, api_key, news_limit)
-    warnings.extend(news_warnings)
 
     fetch_limit = candidate_market_limit(market_limit)
-    candidates, market_warnings = find_markets(topic, tier, api_key, fetch_limit)
+
+    # Run news and market discovery in parallel - each find is a separate
+    # MCP round trip (~5-45s), so overlapping them cuts wall time roughly
+    # in half for the discovery phase.
+    with ThreadPoolExecutor(max_workers=2) as discover_pool:
+        news_future = discover_pool.submit(find_news, topic, tier, api_key, news_limit)
+        market_future = discover_pool.submit(find_markets, topic, tier, api_key, fetch_limit)
+        news, news_warnings = news_future.result()
+        candidates, market_warnings = market_future.result()
+
+    warnings.extend(news_warnings)
     warnings.extend(market_warnings)
     if len(candidates) > market_limit:
         warnings.append(
@@ -488,7 +496,10 @@ def run_brief(
             row["id"] = market["id"]
             return row
 
-        with ThreadPoolExecutor(max_workers=min(6, max(1, len(candidates)))) as pool:
+        # 8-worker pricing pool: each price call is an independent MCP round
+        # trip (~11s), so parallel pricing is the biggest win for multi-market
+        # briefs.
+        with ThreadPoolExecutor(max_workers=min(8, max(1, len(candidates)))) as pool:
             priced = list(pool.map(attach_price, candidates))
         priced = rank_markets(priced)[: max(1, market_limit)]
 

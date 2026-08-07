@@ -19,6 +19,7 @@ from __future__ import annotations
 import http.client
 import json
 import ssl
+import time
 from typing import Any
 from urllib.parse import urlencode, urlparse
 
@@ -161,8 +162,35 @@ def fetch(
     api_key: str | None = None,
     endpoint: str = "/mcp",
 ) -> Any:
-    """Call one MCP tool on the given tier and return its unwrapped payload."""
-    return content_json(call(host_for_tier(tier), api_key, endpoint, tool, args))
+    """Call one MCP tool on the given tier and return its unwrapped payload.
+
+    ``find`` and ``list`` results are cached for 60 seconds (module-level,
+    per-process) so repeated discovery calls within a single brief or scan
+    do not re-pay the ~11s MCP round trip. ``get`` and ``price`` are never
+    cached because they carry time-sensitive quotes.
+    """
+    cacheable = tool in ("find", "list")
+    cache_key: tuple | None = None
+    if cacheable:
+        cache_key = (tool, tier, json.dumps(args, sort_keys=True))
+        cached = _CACHE.get(cache_key)
+        if cached and (time.monotonic() - cached[0]) < _CACHE_TTL:
+            return cached[1]
+    result = content_json(call(host_for_tier(tier), api_key, endpoint, tool, args))
+    if cacheable and cache_key is not None:
+        _CACHE[cache_key] = (time.monotonic(), result)
+    return result
+
+
+# Short-lived find/list cache: each MCP round trip costs ~11s, so caching
+# repeated discovery calls within a single brief cuts wall time significantly.
+_CACHE_TTL = 60  # seconds
+_CACHE: dict[tuple, tuple[float, Any]] = {}
+
+
+def clear_cache() -> None:
+    """Clear the find/list cache. Used by tests."""
+    _CACHE.clear()
 
 
 def call(

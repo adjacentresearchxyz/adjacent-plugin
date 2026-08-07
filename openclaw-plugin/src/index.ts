@@ -5,9 +5,9 @@
  * returns structured results plus artifact paths. None of them return
  * instructions for the agent to carry out by hand.
  *
- * Safety: read-only. The rebalance path is absent rather than flag-gated,
- * so no tool in this package can place an exchange order. Scripts run from
- * an explicit allowlist with an argv array and no shell.
+ * Safety: read-only. The rebalance plan tool forces --dry-run so no
+ * exchange order is ever submitted. Scripts run from an explicit
+ * allowlist with an argv array and no shell.
  *
  * Chart rule: adjacent_chart is the ONLY way to produce chart images
  * through this plugin. Never generate chart code, HTML, SVG, or freehand
@@ -878,6 +878,46 @@ export default defineToolPlugin({
           return { ok: false, error: result.error, detail: result.stderr };
         }
         return result.data;
+      },
+    }),
+
+    // -----------------------------------------------------------------------
+    // adjacent_rebalance_plan - dry-run rebalance PLAN only. Never places.
+    // -----------------------------------------------------------------------
+    tool({
+      name: "adjacent_rebalance_plan",
+      label: "Adjacent Rebalance Plan",
+      description:
+        "Compute a direct-index rebalance PLAN only. This tool is fail-closed " +
+        "and never places orders: it forces --dry-run so no exchange credentials " +
+        "are exercised and no order is submitted. Returns the proposed buys, " +
+        "sells, and drift table. Wraps scripts/rebalance-index.py.",
+      parameters: Type.Object({
+        index: Type.String({ description: "Index slug." }),
+        exchange: Type.Optional(
+          Type.String({
+            description: "Exchange adapter to target (default kalshi).",
+            enum: ["kalshi"],
+          }),
+        ),
+        plan: Type.String({ description: "Path to write the compact plan JSON." }),
+      }),
+      async execute({ index, exchange, plan }) {
+        // --dry-run is hardcoded: this tool can never place an order.
+        const args = [
+          "--index", index,
+          "--exchange", exchange ?? "kalshi",
+          "--plan", plan,
+          "--dry-run",
+        ];
+
+        const result = await runJsonScript<Record<string, unknown>>("rebalance-index.py", args, {
+          timeoutMs: 120_000,
+        });
+        if (!result.ok) {
+          return { ok: false, error: result.error, detail: result.stderr };
+        }
+        return { ...result.data, dry_run: true, orders_placed: false };
       },
     }),
   ],

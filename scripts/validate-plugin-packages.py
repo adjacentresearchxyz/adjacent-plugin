@@ -170,6 +170,7 @@ def assert_openclaw_contract() -> None:
         "adjacent_snapshot_health",
         "adjacent_datawrapper_index",
         "adjacent_http_get",
+        "adjacent_rebalance_plan",
     }
     if not isinstance(tools, list) or set(tools) != expected_tools:
         fail("OpenClaw manifest tool contract does not match the supported tools")

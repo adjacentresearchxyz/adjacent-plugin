@@ -64,7 +64,8 @@
       "adjacent_similar_hedges",
       "adjacent_snapshot_health",
       "adjacent_datawrapper_index",
-      "adjacent_http_get"
+      "adjacent_http_get",
+      "adjacent_rebalance_plan"
     ]
   }
 }

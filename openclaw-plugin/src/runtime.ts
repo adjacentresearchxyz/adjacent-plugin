@@ -38,6 +38,7 @@ export const ALLOWED_SCRIPTS = [
   "mcp-cli.py",
   "topic-brief.py",
   "http-get.py",
+  "rebalance-index.py",
 ] as const;
 
 export type AllowedScript = (typeof ALLOWED_SCRIPTS)[number];
