@@ -29,6 +29,7 @@ BUNDLED_SKILLS: dict[str, str] = {
     "adjacent-data-surfaces": "adjacent-data-surfaces/SKILL.md",
     "adjacent-index-movers": "adjacent-index-movers/SKILL.md",
     "adjacent-news-correlation": "adjacent-news-correlation/SKILL.md",
+    "adjacent-topic-brief": "adjacent-topic-brief/SKILL.md",
     "adjacent-direct-index": "adjacent-direct-index/SKILL.md",
     "adjacent-chart-style": "adjacent-chart-style/SKILL.md",
     "adjacent-workflows": "adjacent-workflows/SKILL.md",
@@ -51,6 +52,7 @@ _WORKFLOW_TOOLS: dict[str, Any] = {
     "news_correlation": _tools.adjacent_news_correlation,
     "correlation_regime": _tools.adjacent_correlation_regime,
     "news_latest": _tools.adjacent_news_latest,
+    "topic_brief": _tools.adjacent_topic_brief,
     "candles_chart": _tools.adjacent_candles_chart,
     "similar_hedges": _tools.adjacent_similar_hedges,
     "snapshot_health": _tools.adjacent_snapshot_health,
@@ -77,6 +79,7 @@ _HELP_TEXT = (
     "  news_correlation     rank live or supplied news vs mid moves\n"
     "  correlation_regime   analyze supplied correlation JSON\n"
     "  news_latest          fetch the live news/latest surface\n"
+    "  topic_brief          topic news + markets + mids (+ charts)\n"
     "  candles_chart        build a mid-based candle chart CSV\n"
     "  similar_hedges       rank similar markets into hedges/proxies\n"
     "  snapshot_health      grade public snapshot freshness\n"

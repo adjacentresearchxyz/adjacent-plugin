@@ -16,7 +16,9 @@ mid-based, Adjacent-branded artifact.
 - `news/latest`: pull the latest news with `scripts/news-latest.py`.
   Add `--normalize` to emit `{market_id, published_at, headline}` rows,
   then rank them with `scripts/news-correlation.py` (see the
-  `adjacent-news-correlation` skill).
+  `adjacent-news-correlation` skill). For a full topic update (news +
+  markets + mids + charts), use `scripts/topic-brief.py` and the
+  `adjacent-topic-brief` skill.
 - `markets/{id}/candles`: fetch candles, then build a mid-based
   `ts,close` chart CSV with `scripts/candles-chart.py`. Add `--rebase`
   to index closes to 100 at the first candle. Never substitute last

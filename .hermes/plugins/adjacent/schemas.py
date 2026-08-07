@@ -435,6 +435,58 @@ HTTP_GET = _schema(
     ),
 )
 
+TOPIC_BRIEF = _schema(
+    "adjacent_topic_brief",
+    (
+        "Topic update workflow: news bullets, related markets with mid "
+        "quotes, and optional branded chart CSVs/PNGs for a free-text "
+        "topic (e.g. washington football). Wraps scripts/topic-brief.py. "
+        "Read-only; never places orders."
+    ),
+    _object(
+        {
+            "topic": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Free-text topic query.",
+            },
+            "news_limit": {
+                "type": "integer",
+                "default": 5,
+                "minimum": 1,
+            },
+            "market_limit": {
+                "type": "integer",
+                "default": 5,
+                "minimum": 1,
+            },
+            "timeframe": {
+                "type": "string",
+                "default": "7d",
+                "description": "Price and chart timeframe.",
+            },
+            "chart": {
+                "type": "boolean",
+                "default": False,
+                "description": "Build candle CSVs for priced markets.",
+            },
+            "png": {
+                "type": "boolean",
+                "default": False,
+                "description": "Also render branded PNGs (implies chart).",
+            },
+            "prod": {
+                "type": "boolean",
+                "default": False,
+                "description": "Use realtime tier when ADJACENT_API_KEY is set.",
+            },
+            "output_dir": _OUTPUT_PATH,
+        },
+        required=["topic"],
+        extra=False,
+    ),
+)
+
 # Registry exposed to tools.py / __init__.py. Keys are the tool names
 # registered with the host; values are the Hermes-shaped schema dicts.
 TOOL_SCHEMAS: dict[str, dict] = {
@@ -449,6 +501,7 @@ TOOL_SCHEMAS: dict[str, dict] = {
     "adjacent_news_correlation": NEWS_CORRELATION,
     "adjacent_correlation_regime": CORRELATION_REGIME,
     "adjacent_news_latest": NEWS_LATEST,
+    "adjacent_topic_brief": TOPIC_BRIEF,
     "adjacent_candles_chart": CANDLES_CHART,
     "adjacent_similar_hedges": SIMILAR_HEDGES,
     "adjacent_snapshot_health": SNAPSHOT_HEALTH,

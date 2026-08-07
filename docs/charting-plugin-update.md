@@ -37,18 +37,14 @@ hex; reach for another token from this table or from `adj.PALETTE`.
 | paper | `--comp-paper` | `#ffffff` | non-plot panels only (axes use canvas) |
 | ink | `--comp-ink` | `#0a0f0d` | title, axis labels, primary text |
 | deep | `--comp-deep` | `#0e2a1f` | dark header surfaces, deep-tone charts |
-| green | `--comp-green` | `#3fae5a` | primary accent, positive series |
+| green | deep chart green | `#0e2a1f` | primary accent, positive series |
 | green-2 | `--comp-green-2` | `#22c55e` | hover / brighter accent |
-| green-deep | Chart accent | `#0e6b3a` | featured / hero single-series accent |
 | salmon | `--comp-salmon` | `#e66b55` | semantic negative, badges |
 | sky | `--comp-sky` | `#6fb7e0` | info badge |
 | mustard | `--comp-mustard` | `#d89a3f` | warning badge |
 | sage | `--comp-sage` | `#a8c49a` | muted positive, series 5 |
 | pink | `--comp-pink` | `#f0a8c8` | series 6 |
-| chart-orange | ChartRenderer | `#e87d2a` | series 2 |
-| chart-blue | ChartRenderer | `#4a90d9` | series 3 |
-| chart-purple | ChartRenderer | `#b85cce` | series 4 |
-| trend-down | TradingViewChart | `#c0392b` | down trend line / area |
+| deep-down | chart down color | `#9b3a2e` | down trend line / area |
 | rule | `--comp-rule` | `#d6d2c8` | hairline, axis edge |
 | grid | `--comp-grid` | `#ecebea` | dotted gridline |
 | fg-2 | `--fg-2` | `#5c5a53` | secondary text, legend |
@@ -58,38 +54,32 @@ hex; reach for another token from this table or from `adj.PALETTE`.
 
 ### Categorical series cycle
 
-Draw series in this exact order so multi-series charts read the same as
-the product charts: `green` `#3fae5a`, `chart-orange` `#e87d2a`,
-`chart-blue` `#4a90d9`, `chart-purple` `#b85cce`, then `sage` and
-`pink` for a rare 5th / 6th series. This is the `ChartRenderer` default
-cycle from Storybook. The helper exposes it as `adj.SERIES` and sets it
-as the matplotlib `axes.prop_cycle`, so `ax.plot(...)` picks it up with
-no color argument.
+Draw series in this exact order: `deep` `#0e2a1f`, `salmon` `#e66b55`,
+`sky` `#6fb7e0`, `mustard` `#d89a3f`, then `sage` and `pink`. The helper
+exposes it as `adj.SERIES` and sets it as the matplotlib `axes.prop_cycle`,
+so `ax.plot(...)` picks it up with no color argument.
 
 ### Directional color
 
-- up / positive: `adj.UP` = `green` (`#3fae5a`); use `up` (`#2a6a3a`)
-  for tick text on the light canvas.
-- down / negative: `adj.DOWN` = `trend-down` (`#c0392b`); use `down`
-  (`#9b3a2e`) for tick text.
+- up / positive: `adj.UP` = deep green (`#0e2a1f`).
+- down / negative: `adj.DOWN` = `deep-down` (`#9b3a2e`).
 - `adj.SALMON` (`#e66b55`) is the semantic negative for badges.
 
-A single line is off-black (`adj.LINE` = `#0a0f0d`). Do not color a lone
+A single line is deep forest green (`adj.LINE` = `#0e2a1f`). Do not color a lone
 line by direction. `adj.ACCENT` / `adj.ACCENT_DEEP` (green) are for a
 chart that is deliberately featured, never to signal direction.
 
 ### Typography
 
 Three stacks, mirroring the design-system tokens exactly. Inter is the
-only face adjacent.markets actually loads; `--font-mono` and
-`--font-serif` are the CSS generics, so these stacks lead with what
-those generics resolve to. Do not substitute a "nicer" mono or serif.
+IBM Plex Mono is the data face and Inter is the headline face. Do not
+substitute a different mono or serif.
 
 | Token | Stack | Use in chart |
 | --- | --- | --- |
 | `--font-main` | Inter, Helvetica Neue, Helvetica, Arial, sans-serif | headline, axis titles, legend, source credit |
 | `--font-serif` | Times New Roman, Times, DejaVu Serif, serif | the deck under the headline |
-| `--font-mono` | Menlo, DejaVu Sans Mono, Courier New, monospace | tick labels, data values, tabular numeric |
+| `--font-mono` | IBM Plex Mono, SF Mono, Menlo, Courier New, monospace | tick labels, data values, tabular numeric |
 
 Never name a font directly in chart code; use `adj.FONTS["main"]`,
 `["serif"]`, `["mono"]`.
@@ -120,26 +110,24 @@ Never name a font directly in chart code; use `adj.FONTS["main"]`,
 - Currency: `$100`, `$1.2M`, `$1.2B`. Use `adj.currency_formatter()`.
 - Counts: `1.2k`, `1.2M`, `1.2B`. Use `adj.number_formatter()`.
 - Dates: `YYYY-MM-DD`. Decimals: `0.012` not `.012`.
-- All pricing is mid-quote, but the source line says ONLY `Adjacent`.
+- All pricing is mid-quote; the source line includes the render timestamp.
 
 ### Source line
 
 Every published chart carries a source eyebrow bottom-left:
 
-`Source: Adjacent`
+`Source: Adjacent YYYY-MM-DD HH:MM UTC`
 
-`adj.SOURCE_DEFAULT` is exactly `"Adjacent"`. `adj.save()` stamps it
-automatically; `adj.source_line(fig, text)` overrides it. Nothing else:
-no "mid-quote", no basis clause, no wordmark, no divider rule. Do not
-add a timestamp to the source text - the helper, `AGENTS.md`, the host
-skills, and the contract tests would all need to change together first.
+`adj.SOURCE_DEFAULT` is `"Adjacent"`; `adj.save()` stamps it with a UTC
+timestamp automatically; `adj.source_line(fig, text)` overrides it.
+Nothing else: no "mid-quote", no basis clause, no wordmark, no divider rule.
 
 ---
 
 ## 2. Hard rules (Lucas's corrections, in order of pain)
 
-1. Source line is exactly `Source: Adjacent`. No "mid-quote", no basis
-   clause, no wordmark, no divider, no timestamp.
+1. Source line is `Source: Adjacent YYYY-MM-DD HH:MM UTC`. No "mid-quote", no basis
+   clause, no wordmark, and no divider.
 2. Titles and axis labels short and direct. No clarifying clauses,
    parentheticals, or comma chains. Good: `GOVBGD vs direct
    replication`, `Rebased level`. Bad: `GOVBGD vs direct replication,
@@ -152,8 +140,8 @@ skills, and the contract tests would all need to change together first.
    the only candle entry point.
 4. Give charts room: generous margins. `adj.figure()` defaults to
    `figsize=(7.6, 4.6)`.
-5. Deep forest green `#0e2a1f` is the deep anchor; `#3fae5a` green is
-   the primary accent. The series cycle above is canonical.
+5. Deep forest green `#0e2a1f` is the primary chart color. The series
+   cycle above is canonical.
 5b. Generous spacing everywhere EXCEPT value labels (tight to ends).
 6. All-beige background - NO white panel (axes facecolor = canvas).
 7. No borders around charts - top / right / left spines hidden.
@@ -211,8 +199,8 @@ adj.apply_adjacent_theme()   # call before any plt.*/sns.*
 
 | Export | Purpose |
 | --- | --- |
-| `PALETTE` | token -> hex dict (canvas, paper, ink, deep, green, green-2, green-deep, salmon, sky, mustard, sage, pink, chart-green, chart-orange, chart-blue, chart-purple, trend-down, rule, hover, grid, fg-2, fg-3, on-deep, up, down) |
-| `SERIES` | categorical cycle: chart-green, chart-orange, chart-blue, chart-purple, sage, pink |
+| `PALETTE` | token -> hex dict including the deep green shades, salmon, sky, mustard, sage, and pink |
+| `SERIES` | categorical cycle: deep green, salmon, sky, mustard, sage, pink |
 | `LINE` / `ACCENT` / `ACCENT_DEEP` | lone-series / featured accents |
 | `UP` / `DOWN` / `SALMON` | directional / semantic colors |
 | `FONTS` | main / serif / mono stacks |
@@ -226,10 +214,10 @@ adj.apply_adjacent_theme()   # call before any plt.*/sns.*
 | `series_label(ax, x, y, text, color, dx, dy)` | inline series label at the right end |
 | `last_value(ax, x, y, text, color, reference)` | closing-value filled pill + dotted reference line |
 | `event_markers(ax, events, rule, wrap)` | dated event rules + labels |
-| `bar_labels(ax, bars, values, fmt, color)` | bar value labels (handles negatives) |
+| `bar_labels(ax, bars, values, fmt, color)` | bar value labels (handles negatives). **No `fontsize` kwarg** - fixed helper size; use `ax.tick_params` / `ax.text` for larger labels |
 | `percent_formatter()` / `currency_formatter()` / `number_formatter()` | tick formatters |
 | `title_block(ax, title, subtitle)` | declare headline + deck on an existing figure |
-| `area_series(ax, x, y, color, label, linewidth, alpha, baseline)` | filled area series (default off-black) |
+| `area_series(ax, x, y, color, label, linewidth, alpha, baseline)` | filled area series (default deep green) |
 | `swatch_legend(fig, entries)` | frameless header legend from `(label, hex)` pairs |
 | `source_line(fig, text)` | override the source credit |
 | `save(fig, path, source, dpi)` | layout + stamp source + write PNG; returns the absolute path |
@@ -360,7 +348,7 @@ start, from true hourly mids.
 - Portfolio value = `sum(contracts_i * mid_i)`; index level =
   `100 * (0.50 + sum(weight_i * mid_i))`; rebase both `(v/v0 - 1) * 100`.
 - Style: title `GOVBGD direct vs index`, y `change from start, %`,
-  source exactly `Source: Adjacent`, black line direct + sky `#6fb7e0`
+  source `Source: Adjacent YYYY-MM-DD HH:MM UTC`, deep-green line direct + sky `#6fb7e0`
   index, endpoint labels bold mono `+/-X.X%`, legend above plot.
 - Read: the gap between endpoints is the story.
 
@@ -429,6 +417,11 @@ start, from true hourly mids.
   the style rules.
 - Deliver ONE image per message on Telegram (multiple `MEDIA:` lines in
   one reply do not reliably render).
+- Phone width: more than ~6 vertical bar categories is unreadable when
+  downscaled. Prefer `ax.barh`, full labels, fonts >= 12pt, figsize
+  about `(10, 7)`, and a bullet list of the same numbers alongside the
+  image. Never make the PNG the only carrier.
+- `adj.bar_labels` accepts no `fontsize` kwarg (TypeError if passed).
 
 ---
 

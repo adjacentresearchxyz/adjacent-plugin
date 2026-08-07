@@ -21,14 +21,7 @@ def test_datawrapper_metadata_uses_adjacent_brand_tokens():
     assert visualize["background"] == "#ece9e2"
     assert visualize["plot-background"] == "#ece9e2"
     assert visualize["grid-color"] == "#ecebea"
-    assert visualize["color-range"] == [
-        "#3fae5a",
-        "#e87d2a",
-        "#4a90d9",
-        "#b85cce",
-        "#a8c49a",
-        "#f0a8c8",
-    ]
+    assert visualize["color-range"] == module.SERIES
     assert payload["metadata"]["describe"]["source-name"] == "Adjacent"
 
 

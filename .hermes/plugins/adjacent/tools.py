@@ -108,6 +108,7 @@ ALLOWED_SCRIPTS: _ScriptAllowlist = _ScriptAllowlist(
         "news-correlation.py",
         "correlation-regime.py",
         "news-latest.py",
+        "topic-brief.py",
         "candles-chart.py",
         "similar-hedges.py",
         "snapshot-health.py",
@@ -253,6 +254,25 @@ def _news_latest_argv(params: dict[str, Any]) -> list[str]:
     return argv
 
 
+def _topic_brief_argv(params: dict[str, Any]) -> list[str]:
+    argv: list[str] = [ALLOWED_SCRIPTS["topic-brief.py"], str(params["topic"])]
+    if "news_limit" in params:
+        argv += ["--news-limit", str(params["news_limit"])]
+    if "market_limit" in params:
+        argv += ["--market-limit", str(params["market_limit"])]
+    if params.get("timeframe"):
+        argv += ["--timeframe", str(params["timeframe"])]
+    if params.get("chart"):
+        argv.append("--chart")
+    if params.get("png"):
+        argv.append("--png")
+    if params.get("prod"):
+        argv.append("--prod")
+    if params.get("output_dir"):
+        argv += ["--output-dir", str(params["output_dir"])]
+    return argv
+
+
 def _candles_chart_argv(params: dict[str, Any]) -> list[str]:
     argv: list[str] = [ALLOWED_SCRIPTS["candles-chart.py"]]
     if params.get("input"):
@@ -304,6 +324,7 @@ ALLOWED_WORKFLOWS: dict[str, tuple[str, Any]] = {
     "news_correlation": ("adjacent_news_correlation", _news_correlation_argv),
     "correlation_regime": ("adjacent_correlation_regime", _correlation_regime_argv),
     "news_latest": ("adjacent_news_latest", _news_latest_argv),
+    "topic_brief": ("adjacent_topic_brief", _topic_brief_argv),
     "candles_chart": ("adjacent_candles_chart", _candles_chart_argv),
     "similar_hedges": ("adjacent_similar_hedges", _similar_hedges_argv),
     "snapshot_health": ("adjacent_snapshot_health", _snapshot_health_argv),
@@ -472,6 +493,10 @@ def adjacent_news_latest(args: dict, **kwargs: Any) -> str:
     return _json(run_workflow("news_latest", args))
 
 
+def adjacent_topic_brief(args: dict, **kwargs: Any) -> str:
+    return _json(run_workflow("topic_brief", args))
+
+
 def adjacent_candles_chart(args: dict, **kwargs: Any) -> str:
     return _json(run_workflow("candles_chart", args))
 
@@ -501,6 +526,7 @@ TOOL_HANDLERS: dict[str, Any] = {
     "adjacent_news_correlation": adjacent_news_correlation,
     "adjacent_correlation_regime": adjacent_correlation_regime,
     "adjacent_news_latest": adjacent_news_latest,
+    "adjacent_topic_brief": adjacent_topic_brief,
     "adjacent_candles_chart": adjacent_candles_chart,
     "adjacent_similar_hedges": adjacent_similar_hedges,
     "adjacent_snapshot_health": adjacent_snapshot_health,

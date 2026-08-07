@@ -59,3 +59,22 @@ For an index-mover alert, match `/data/index-movers`:
 YYYY-MM-DD HH:MM ET movers
 - <slug>: 1d <move>%, 7d <move>%, convention-break: yes|no
 ```
+
+For a topic update, match `/data/topic-brief` and the
+`adjacent-topic-brief` skill:
+
+```
+YYYY-MM-DD HH:MM ET topic brief: <topic>
+
+News
+- <headline> (<source>, <YYYY-MM-DD>)
+
+Take
+- <1-3 sentences grounded in mids>
+
+Markets (mid)
+- <name>: <mid%>  id=<platform:raw>
+
+charts
+- <csv or png path>
+```

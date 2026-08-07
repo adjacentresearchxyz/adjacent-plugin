@@ -33,7 +33,7 @@ available with no imports.
 from __future__ import annotations
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 # -------------------------------------------------------------------
@@ -46,6 +46,11 @@ PALETTE: dict[str, str] = {
     "canvas": "#ece9e2",   # beige page background (--comp-canvas)
     "paper": "#ffffff",    # white panel / axes face (--comp-paper)
     "deep": "#0e2a1f",     # deep forest green, header surfaces (--comp-deep)
+    "deep-2": "#1d4a38",
+    "deep-3": "#35634f",
+    "deep-4": "#5a826f",
+    "deep-5": "#7f9f88",
+    "deep-6": "#a8c49a",
     # ink + text tiers
     "ink": "#0a0f0d",      # primary text / title (--comp-ink, --fg-1)
     "fg-2": "#5c5a53",     # secondary text (--fg-2)
@@ -74,6 +79,7 @@ PALETTE: dict[str, str] = {
     # readable tick colors on light canvas (paper family)
     "up": "#2a6a3a",       # positive tick text (--paper-up)
     "down": "#9b3a2e",     # negative tick text (--paper-down)
+    "deep-down": "#9b3a2e",
 }
 
 # Categorical series cycle. This mirrors the ChartRenderer default cycle
@@ -82,11 +88,11 @@ PALETTE: dict[str, str] = {
 # 5th / 6th series. Draw series in this exact order so multi-series
 # charts read the same as the product charts.
 SERIES: list[str] = [
-    PALETTE["chart-green"],
-    PALETTE["chart-orange"],
-    PALETTE["chart-blue"],
-    PALETTE["chart-purple"],
-    PALETTE["sage"],
+    PALETTE["deep"],
+    PALETTE["salmon"],
+    PALETTE["sky"],
+    PALETTE["mustard"],
+    PALETTE["deep-6"],
     PALETTE["pink"],
 ]
 
@@ -95,15 +101,15 @@ SERIES: list[str] = [
 # decoration that misreads as a signal. ACCENT / ACCENT_DEEP stay available
 # for a deliberately featured chart (the Chart and TradingViewChart
 # green-accent stories).
-LINE: str = PALETTE["ink"]
-ACCENT: str = PALETTE["green"]
-ACCENT_DEEP: str = PALETTE["green-deep"]
+LINE: str = PALETTE["deep"]
+ACCENT: str = PALETTE["deep"]
+ACCENT_DEEP: str = PALETTE["deep-2"]
 
 # Financial direction colors for trend / area / gain-loss charts. UP is
 # the accent green; DOWN is the TradingViewChart down-red. SALMON stays
 # the semantic negative token for categorical bars and badges.
-UP: str = PALETTE["green"]
-DOWN: str = PALETTE["trend-down"]
+UP: str = PALETTE["deep"]
+DOWN: str = PALETTE["deep-down"]
 SALMON: str = PALETTE["salmon"]
 
 # Fonts, mirroring the design-system tokens exactly. Inter is the only
@@ -118,10 +124,14 @@ FONTS: dict[str, list[str]] = {
     # --font-serif: serif
     "serif": ["Times New Roman", "Times", "DejaVu Serif", "serif"],
     # --font-mono: monospace
-    "mono": ["Menlo", "DejaVu Sans Mono", "Courier New", "monospace"],
+    "mono": ["IBM Plex Mono", "SF Mono", "Menlo", "Courier New", "monospace"],
 }
 
 SOURCE_DEFAULT = "Adjacent"
+
+
+def _timestamped_source() -> str:
+    return f"{SOURCE_DEFAULT} {datetime.now(timezone.utc):%Y-%m-%d %H:%M UTC}"
 
 # Editorial layout metrics, in inches. The header stacks downward from the
 # top of the figure (headline, deck, swatch legend); the footer is the
@@ -258,7 +268,7 @@ def _meta(fig) -> dict[str, Any]:
             "headline": None,
             "deck": None,
             "legend": [],
-            "source": SOURCE_DEFAULT,
+            "source": _timestamped_source(),
             # Inches to keep clear on the right for pills and series labels.
             "right_gutter": 0.0,
         }
@@ -270,7 +280,7 @@ def figure(
     *,
     headline: str | None = None,
     deck: str | None = None,
-    source: str | None = SOURCE_DEFAULT,
+    source: str | None = None,
     figsize: tuple[float, float] = (7.6, 4.6),
     panels: tuple[int, int] | None = None,
 ):
@@ -308,7 +318,9 @@ def figure(
         axes, targets = ax, [ax]
 
     meta = _meta(fig)
-    meta.update(headline=headline, deck=deck, source=source)
+    meta.update(headline=headline, deck=deck)
+    if source is not None:
+        meta["source"] = source
     for target in targets:
         frame(target)
     return fig, axes
@@ -1287,9 +1299,9 @@ def _style_ticklabels(fig) -> None:
             lbl.set_fontstyle("normal")
 
 
-def source_line(fig, text: str = SOURCE_DEFAULT) -> Any:
+def source_line(fig, text: str | None = None) -> Any:
     """Set the source credit rendered in the footer band by save()."""
-    _meta(fig)["source"] = text
+    _meta(fig)["source"] = text if text is not None else _timestamped_source()
     return fig
 
 
@@ -1510,7 +1522,7 @@ def plotly_template() -> dict[str, Any]:
         },
         "annotations": [
             {
-                "text": f"Source: {SOURCE_DEFAULT}",
+                "text": f"Source: {_timestamped_source()}",
                 "showarrow": False,
                 "xref": "paper",
                 "yref": "paper",

@@ -161,7 +161,7 @@ Source of truth and precedence (charting):
 1. The executable behavior and public exports in
    `scripts/adjacent_chart_style.py` - the canonical helper.
 2. This `AGENTS.md` section (writing rules + safety).
-3. The host chart-style skills (`.factory`, `.hermes`, `plugins`) and
+3. The host chart-style skill copies and
    `docs/charting-plugin-update.md`, which describe the helper.
 4. Individual producer scripts.
 
@@ -171,9 +171,9 @@ its repository-relative path (`scripts/adjacent_chart_style.py`); an
 installed runtime path may be mentioned as an example but must not be
 the only path. When the helper changes, update this section, the three
 host skill copies, and `tests/test_chart_style_contract.py` together.
-Resolved rules: keep the six-color `SERIES` cycle (green, orange, blue,
-purple, sage, pink), keep `Source: Adjacent` as the default source
-string (no timestamp), do not require an x-axis title when the deck or
+Resolved rules: keep the six-color `SERIES` cycle (deep green, salmon,
+sky, mustard, sage, pink), use a UTC timestamp in rendered
+`Source: Adjacent` credits, do not require an x-axis title when the deck or
 context already communicates the unit, and label bars outside by
 default with explicit exceptions for large stacked segments.
 
@@ -182,20 +182,19 @@ On-brand summary (see the skill for the full table):
 - Canvas `#ece9e2` (figure and plot area - one surface); paper
   `#ffffff` is a token for non-plot panels only.
 - Ink `#0a0f0d`; deep `#0e2a1f`.
-- Lone series: off-black `#0a0f0d`. Directional up `#3fae5a`; down
-  `#c0392b` (TradingViewChart). Salmon `#e66b55` is categorical /
-  badge negative, not a trend color.
-- Series cycle (ChartRenderer): `#3fae5a`, `#e87d2a`, `#4a90d9`,
-  `#b85cce`, then sage `#a8c49a` / pink `#f0a8c8` for a rare 5th/6th.
+- Lone series: deep forest green `#0e2a1f`. Directional up `#0e2a1f`; down
+  `#9b3a2e`. The six-series cycle is deep green, salmon, sky, mustard,
+  sage, and pink.
+- Series cycle: deep `#0e2a1f`, salmon `#e66b55`, sky `#6fb7e0`,
+  mustard `#d89a3f`, sage `#a8c49a`, pink `#f0a8c8`.
 - Hairline `#d6d2c8`; grid `#ecebea` (dotted, behind data).
-- Fonts mirror the design-system tokens: `--font-main` is Inter, the
-  only face the site loads; `--font-serif` (deck) and `--font-mono`
-  (ticks, data values) are the CSS generics. Never name a font
-  directly; use the stacks.
+- Fonts mirror the design-system tokens: `--font-main` is Inter and
+  `--font-mono` uses IBM Plex Mono for ticks and data values. Never name
+  a font directly; use the stacks.
 - Square corners (`--radius: 0`); only the x baseline spine.
 - Horizontal gridlines only. Color is for distinguishing two or more
   series, never a lone line by direction.
-- Source credit bottom-left: `Source: Adjacent`. No wordmark, no
+- Source credit bottom-left: `Source: Adjacent YYYY-MM-DD HH:MM UTC`. No wordmark, no
   divider rule, no basis clause.
 - Headline states the finding; the deck is just the identifier.
 - Axis ticks carry the unit on the top tick only; stated values use
