@@ -42,6 +42,20 @@ EXPECTED_TOOLS = [
     "adjacent_chart",
     "adjacent_movers",
     "adjacent_capabilities",
+    "adjacent_mcp_query",
+    "adjacent_topic_brief",
+    "adjacent_news_latest",
+    "adjacent_news_correlation",
+    "adjacent_correlation_regime",
+    "adjacent_portfolio_snapshot",
+    "adjacent_tracking",
+    "adjacent_tracking_table",
+    "adjacent_chart_csv",
+    "adjacent_candles_chart",
+    "adjacent_similar_hedges",
+    "adjacent_snapshot_health",
+    "adjacent_datawrapper_index",
+    "adjacent_http_get",
 ]
 
 # The shared Python core bundled into the tarball so a clean install needs

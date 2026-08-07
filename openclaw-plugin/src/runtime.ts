@@ -36,6 +36,8 @@ export const ALLOWED_SCRIPTS = [
   "correlation-regime.py",
   "datawrapper-index.py",
   "mcp-cli.py",
+  "topic-brief.py",
+  "http-get.py",
 ] as const;
 
 export type AllowedScript = (typeof ALLOWED_SCRIPTS)[number];

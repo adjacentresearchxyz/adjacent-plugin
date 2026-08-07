@@ -30,12 +30,36 @@ remedy for anything degraded.
 | `adjacent_chart` | chart from live data | CSV path, PNG path, chart id; supports overlays |
 | `adjacent_movers` | threshold scan | sorted movers |
 | `adjacent_capabilities` | live data surfaces | live and unavailable lists |
+| `adjacent_mcp_query` | list / find / get / price | MCP results (markets, indices, prices) |
+| `adjacent_topic_brief` | news + markets + charts for a topic | news, markets, mids, chart paths |
+| `adjacent_news_latest` | live news surface | article rows |
+| `adjacent_news_correlation` | rank news by mid moves | correlation scores |
+| `adjacent_correlation_regime` | flag sigma shifts | regime flags |
+| `adjacent_portfolio_snapshot` | portfolio status | position rows |
+| `adjacent_tracking` | per-position tracking | mid-based table |
+| `adjacent_tracking_table` | tracking CSV | CSV path |
+| `adjacent_chart_csv` | per-index return chart CSV | CSV path |
+| `adjacent_candles_chart` | candle chart from JSON | CSV path |
+| `adjacent_similar_hedges` | rank similar markets | hedges and proxies |
+| `adjacent_snapshot_health` | grade snapshot freshness | per-snapshot grades |
+| `adjacent_datawrapper_index` | Datawrapper chart CSV | CSV path, publish status |
+| `adjacent_http_get` | fetch export / docs surface | response body or file path |
 
 Two example prompts for a fresh install:
 
 - "Run the Adjacent daily brief and show me anything that moved."
 - "Build a 7d chart for kalshi:SENATETX-26-R."
 - "Overlay the RED and BLUE indices over 30 days and rebase them to 100."
+- "Tell me about trump - news, markets, and charts."
+- "Find markets related to washington football and show mid quotes."
+
+## Chart rule
+
+`adjacent_chart` is the ONLY way to produce chart images through this
+plugin. Never generate chart code, HTML, SVG, or freehand visualizations.
+Every chart must come from `adjacent_chart` (which uses the branded
+helper: deep green, beige canvas, source line) or Datawrapper with
+Adjacent metadata. An unbranded chart is a bug, not a shortcut.
 
 ## Data tier and artifacts
 
