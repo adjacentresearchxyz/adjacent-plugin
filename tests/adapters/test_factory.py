@@ -42,6 +42,7 @@ EXPECTED_COMMANDS = [
     "data-news-latest",
     "data-similar-hedges",
     "data-snapshot-health",
+    "data-topic-brief",
     "trading-portfolio-snapshot",
     "trading-rebalance-index",
 ]
@@ -53,6 +54,7 @@ EXPECTED_SKILLS = [
     "adjacent-index-movers",
     "adjacent-markets",
     "adjacent-news-correlation",
+    "adjacent-topic-brief",
     "adjacent-workflows",
     "briefings",
     "datawrapper-tables",

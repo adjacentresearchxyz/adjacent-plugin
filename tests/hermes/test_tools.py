@@ -286,6 +286,8 @@ def test_allowlist_excludes_order_scripts():
                 "news": "news.json",
                 "prices": "prices.json",
                 "input": "correlations.json",
+                "topic": "washington football",
+                "url": "https://api.adjacent.markets/export/demo.csv",
             }
         )
         assert argv[0] in allowed_paths

@@ -44,6 +44,7 @@ and specialist agent.
 | Free-form question | `/data/ask` | adjacent-markets, briefings | ask-assistant |
 | Find a market | `/data/market-find` | adjacent-markets | - |
 | Pull the latest news | `/data/news-latest` | adjacent-news-correlation | - |
+| Topic update (news + markets + charts) | `/data/topic-brief` | adjacent-topic-brief, adjacent-chart-style, briefings | - |
 | Explain a move from news | `/data/news-correlation` | adjacent-news-correlation | - |
 | Chart a market from candles | `/data/candles-chart` | adjacent-data-surfaces, adjacent-chart-style | - |
 | Find hedges for a market | `/data/similar-hedges` | adjacent-data-surfaces | - |

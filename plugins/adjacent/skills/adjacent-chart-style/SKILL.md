@@ -1,7 +1,7 @@
 ---
 name: adjacent-chart-style
 description: Adjacent chart branding spec - palette, type, grid, accents, and source line for every chart this plugin produces (Seaborn, matplotlib, Plotly, Datawrapper). Mirrors the Adjacent Design System tokens. Apply before any chart is rendered or published.
-version: 1.0.0
+version: 1.1.0
 category: data-science
 allowed-tools:
   - Bash
@@ -26,8 +26,7 @@ source-line stamper. Prefer it over re-deriving values by hand.
 1. The executable behavior and public exports in
    `scripts/adjacent_chart_style.py` - the canonical helper.
 2. `AGENTS.md` (writing rules + safety).
-3. This skill and the other host chart-style skill copies
-   (`.factory`, `.hermes/plugins/adjacent`, `plugins/adjacent`), plus
+3. This skill and its peer host chart-style skill copies, plus
    `docs/charting-plugin-update.md`.
 4. Individual producer scripts.
 
@@ -42,18 +41,27 @@ wins, and this skill, `AGENTS.md`, the other two host copies, and
 
 Resolved rules (do not change without updating the helper first):
 
-- `SOURCE_DEFAULT` is exactly `Source: Adjacent` - no timestamp, no
-  basis clause, no wordmark, no divider.
-- The `SERIES` cycle is green, chart-orange, chart-blue, chart-purple,
-  sage, pink (the `ChartRenderer` default cycle).
-- A lone series is off-black; color distinguishes categories or signs,
-  never a lone line by direction.
+- `SOURCE_DEFAULT` is `Adjacent`; rendered source credits append a UTC
+  timestamp in `YYYY-MM-DD HH:MM UTC` format. No basis clause, wordmark,
+  or divider.
+- The `SERIES` cycle is deep green, salmon, sky, mustard, sage, pink.
+- A lone series uses deep forest green; color distinguishes categories or
+  signs, never a lone line by direction.
 - No x-axis title is required when the deck or chart context already
   communicates the unit.
 - Bar value labels sit outside the bar by default, with an explicit
   exception for sufficiently large stacked segments.
-- Fonts are Inter (main), the `--font-serif` / `--font-mono` CSS
-  generic stacks - never Lora or IBM Plex Mono.
+- `adj.bar_labels(ax, bars, values, fmt, color=...)` takes **no**
+  `fontsize` kwarg - sizing is fixed in the helper. Use
+  `ax.tick_params(...)` or manual `ax.text(...)` when label size must
+  change.
+- Charts are often read on a phone (narrow chat width). More than about
+  six categories on a vertical bar chart is unreadable when downscaled.
+  Prefer horizontal bars (`ax.barh`) with full labels, larger figsize,
+  and a text bullet fallback when the image alone cannot carry the
+  numbers.
+- Fonts are Inter (main), the `--font-serif` stack for decks, and IBM Plex
+  Mono for ticks and data values.
 - Candles are Heikin-Ashi only, never raw candlesticks.
 - All pricing is mid-quote; `%` never `pp`; no em-dash, no emoji.
 
@@ -76,7 +84,7 @@ nothing is ever hand-placed:
 | headline | Inter bold, 16pt, `ink` | the finding as a sentence, sentence case, wraps |
 | deck | serif, 11pt, `fg-2` | the series identifier, usually one word: `RED` |
 | plot | - | the data |
-| source | Inter 8.5pt, `fg-3` | `Source: Adjacent`, bottom-left, no rule |
+| source | Inter 8.5pt, `fg-3` | `Source: Adjacent YYYY-MM-DD HH:MM UTC`, bottom-left, no rule |
 
 **Two lines of text, and nothing else.** Anything a reader can infer
 from the axes stays off the chart: the timeframe, the pricing basis,
@@ -158,8 +166,62 @@ Value callouts:
   square pill at the right edge with a dotted reference line across the
   plot. This is the product's index-chart signature.
 - `adj.end_label(...)` for a plain endpoint callout with no pill.
-- `adj.bar_labels(ax, bars, values, fmt)` - values on the bars so the
-  axis can stay sparse. Handles negative bars.
+- `adj.bar_labels(ax, bars, values, fmt, color=None)` - values on the
+  bars so the axis can stay sparse. Handles negative bars.
+
+### API pitfall: `bar_labels()` has no `fontsize`
+
+Signature is fixed in the helper:
+
+```python
+adj.bar_labels(ax, bars, values, fmt=str, *, color=None)
+```
+
+Passing `fontsize=...` raises `TypeError`. Do not fork the helper to
+accept it. When tick or category labels need to be larger (especially
+for phone delivery):
+
+- Category / axis ticks: `ax.tick_params(axis="y", labelsize=12)` (or
+  `"x"` for vertical bars)
+- One-off value labels: `ax.text(...)` with `fontsize=12` and
+  `fontdict={"family": adj.FONTS["mono"][0]}` (or the mono stack)
+- Keep `adj.bar_labels(...)` for the default mono end labels when the
+  fixed 9pt size is fine
+
+## Phone readability (chat / Telegram width)
+
+Many charts land in narrow chat clients. Design for ~phone width, not a
+desktop plot window.
+
+- **Vertical bar charts with more than about six categories** become
+  unreadable when downscaled. Prefer `ax.barh` so category names stay
+  full-width and horizontal.
+- **Labels:** write the full readable form (`at least 8%`, not `>=8%` or
+  a truncated tick). Prefer fonts at least **12pt** for category and
+  value text on multi-category bars.
+- **Figure size:** for multi-category horizontal bars use roughly
+  `figsize=(10, 7)` (or taller as categories grow). The house default
+  `(7.6, 4.6)` is for line / area charts, not dense category ladders.
+- **Template:** horizontal bars, large labels, brand palette - the
+  tariff / probability ladder style. That is the bar default going
+  forward when the chart is a ranked list of levels.
+- **Text fallback:** if the image is still hard to read, ship the
+  numbers as ASCII bullets **alongside** the image. Never make the PNG
+  the only carrier of the values.
+
+```python
+# Multi-category ladder (phone-safe)
+fig, ax = adj.figure(
+    headline="Tariff outcomes still cluster below 20%",
+    deck="KALSHI",
+    figsize=(10, 7),
+)
+bars = ax.barh(labels, mids, color=adj.SERIES[0])
+ax.tick_params(axis="y", labelsize=12)
+adj.bar_labels(ax, bars, mids, fmt=lambda v: f"{100 * v:.1f}%")
+adj.save(fig, "ladder.png")
+# Also print a bullet list of the same numbers in the message body.
+```
 
 ## Events
 
@@ -184,10 +246,11 @@ the data.
 
 | Form | When | How |
 | --- | --- | --- |
-| area | one index or price series | `adj.area_series(...)` (default off-black) |
+| area | one index or price series | `adj.area_series(...)` (default deep green) |
 | line | two or three series compared | `ax.plot` + `adj.series_label` or `adj.swatch_legend` |
 | step | changes only at discrete events | `ax.plot(..., drawstyle="steps-post")` |
-| diverging bars | movers scans, gain/loss | `ax.bar` with `UP`/`DOWN` + `adj.bar_labels` |
+| diverging bars | movers scans, gain/loss (few categories) | `ax.bar` with `UP`/`DOWN` + `adj.bar_labels` |
+| horizontal ladder | ranked levels, many categories, chat delivery | `ax.barh` + large y labels + text bullet fallback |
 | small multiples | four or more series, shared scale | `adj.figure(panels=(2, 2))` + `adj.small_multiples` |
 | heikin-ashi | OHLC price path | `adj.heikin_ashi(...)` only - never raw candles |
 | stacked area | composition over time | `adj.stacked_area` |
@@ -237,10 +300,7 @@ hex; if you need a new color, reach for another token from this table.
 | sage | `--comp-sage` | `#a8c49a` | muted positive, series 5 |
 | pink | `--comp-pink` | `#f0a8c8` | series 6 |
 | green-deep | Chart accent | `#0e6b3a` | featured / hero single-series accent |
-| chart-orange | ChartRenderer | `#e87d2a` | series 2 |
-| chart-blue | ChartRenderer | `#4a90d9` | series 3 |
-| chart-purple | ChartRenderer | `#b85cce` | series 4 |
-| trend-down | TradingViewChart | `#c0392b` | down trend line / area |
+| deep-down | chart down color | `#9b3a2e` | down trend line / area |
 | rule | `--comp-rule` | `#d6d2c8` | hairline, axis edge, borders |
 | grid | `--comp-grid` | `#ecebea` | dotted gridline |
 | fg-2 | `--fg-2` | `#5c5a53` | secondary text, legend |
@@ -253,20 +313,19 @@ hex; if you need a new color, reach for another token from this table.
 For multi-series charts, draw series in this exact order so the brand
 reads the same as the product charts:
 
-`green` `#3fae5a`, `chart-orange` `#e87d2a`, `chart-blue` `#4a90d9`,
-`chart-purple` `#b85cce`, then `sage` and `pink` for a rare 5th / 6th
-series. This is the `ChartRenderer` default cycle from Storybook. The
+`deep` `#0e2a1f`, `salmon` `#e66b55`, `sky` `#6fb7e0`, `mustard` `#d89a3f`,
+then `sage` and `pink` for the 5th / 6th series. The
 helper exposes it as `adj.SERIES` and sets it as the matplotlib
 `axes.prop_cycle`, so `ax.plot(...)` picks it up with no color argument.
 
 For a single-series chart use one accent, not the cycle:
-`adj.ACCENT` (`#3fae5a`) normally, `adj.ACCENT_DEEP` (`#0e6b3a`) for a
+`adj.ACCENT` (`#0e2a1f`) normally, `adj.ACCENT_DEEP` (`#1d4a38`) for a
 featured or hero chart.
 
 ## Directional color
 
-**A single line is off-black.** `adj.LINE` (`#0a0f0d`) is the default
-for `area_series` and for any lone series. Do not color a line green
+**A single line is deep forest green.** `adj.LINE` (`#0e2a1f`) is the
+default for `area_series` and for any lone series. Do not color a line green
 because it rose or red because it fell - a lone line carries no
 categorical meaning, so the color is decoration that reads as a signal.
 The same applies to every panel of a small-multiple grid.
@@ -277,10 +336,8 @@ on one axis take `adj.SERIES` in order.
 Directional color is for marks where the sign is the category - gain
 and loss bars, up and down badges:
 
-- up / positive: `adj.UP` = `green` (`#3fae5a`); use `up` (`#2a6a3a`)
-  for tick text on the light canvas.
-- down / negative: `adj.DOWN` = `trend-down` (`#c0392b`); use `down`
-  (`#9b3a2e`) for tick text.
+- up / positive: `adj.UP` = deep green (`#0e2a1f`).
+- down / negative: `adj.DOWN` = `deep-down` (`#9b3a2e`).
 - `adj.SALMON` (`#e66b55`) is the semantic negative for badges.
 
 `adj.ACCENT` / `adj.ACCENT_DEEP` (green) are for a chart that is
@@ -290,17 +347,15 @@ default.
 
 ## Typography
 
-Three stacks, mirroring the design-system tokens exactly. **Inter is
-the only face adjacent.markets actually loads.** `--font-mono` and
-`--font-serif` are the CSS generics, so these stacks lead with what
-those generics resolve to. Do not substitute a nicer mono or serif -
-the chart would stop matching the page.
+Three stacks, mirroring the design-system tokens exactly. Inter is used
+for headlines and IBM Plex Mono for data values. Do not substitute a
+different mono face - the chart would stop matching the pulse treatment.
 
 | Token | Stack | Use in chart |
 | --- | --- | --- |
 | `--font-main` | Inter, Helvetica Neue, Helvetica, Arial, sans-serif | headline, axis titles, legend, source credit |
 | `--font-serif` | Times New Roman, Times, DejaVu Serif, serif | the deck under the headline |
-| `--font-mono` | Menlo, DejaVu Sans Mono, Courier New, monospace | tick labels, data values, any tabular numeric |
+| `--font-mono` | IBM Plex Mono, SF Mono, Menlo, Courier New, monospace | tick labels, data values, any tabular numeric |
 
 Never name a font directly in chart code; use `adj.FONTS["main"]`,
 `["serif"]`, `["mono"]`.
@@ -338,7 +393,7 @@ remain for a tick axis that needs the unit on every label.
 
 ## Signature area chart
 
-The house look for a single index or price series is a solid off-black
+The house look for a single index or price series is a solid deep-green
 line over a vertical gradient that fades to transparent at the
 baseline - the `TradingViewChart` look. `adj.area_series(ax, x, y)`
 draws the line, clips the gradient to the series, anchors the y axis to
@@ -397,8 +452,9 @@ Spacing is what most often breaks the brand. The helper owns it:
   count for real (the locator otherwise overshoots), uses concise
   labels with the shared date in an offset, and keeps them horizontal
   and mono. Pass `rotation=30` only for long labels.
-- `figsize=(7.6, 4.6)` is the house default; `(7.6, 5.0)` for a 2x2
-  panel grid.
+- `figsize=(7.6, 4.6)` is the house default for line / area charts;
+  `(7.6, 5.0)` for a 2x2 panel grid; about `(10, 7)` for multi-category
+  horizontal bar ladders aimed at phone width.
 
 ## Plotly
 
@@ -446,4 +502,7 @@ same brand in the metadata PATCH:
 - A wordmark, a footer divider rule, or a basis clause in the source.
 - A white panel or any plot background other than the beige canvas.
 - The floating offset date beside the x axis.
-- A lone line colored by direction. Off-black unless it is a hero.
+- A lone line colored by direction. Deep green unless it is a hero.
+- `adj.bar_labels(..., fontsize=...)` - that kwarg does not exist.
+- A dense vertical bar chart (>~6 categories) shipped as the only
+  carrier of the numbers in a phone-width chat.

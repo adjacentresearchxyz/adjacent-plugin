@@ -29,24 +29,14 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
+from _candles import rebase as rebase_series
+from _candles import series_rows, to_series
 from _mcp import McpError, fetch
 from _paths import data_dir, scripts_dir, state_dir
 
 
 def _run(argv: list[str], stdin_text: str | None = None) -> subprocess.CompletedProcess:
     return subprocess.run(argv, input=stdin_text, capture_output=True, text=True)
-
-
-def _series_of(payload):
-    """Find the timeseries rows in a raw price payload."""
-    if isinstance(payload, list):
-        return payload
-    if isinstance(payload, dict):
-        for key in ("candles", "series", "timeseries", "points", "data", "items"):
-            rows = payload.get(key)
-            if isinstance(rows, list):
-                return rows
-    return []
 
 
 def candles_csv(
@@ -65,7 +55,7 @@ def candles_csv(
             tier=tier,
             api_key=api_key,
         )
-        return entity_id, _series_of(payload)
+        return entity_id, series_rows(payload)
 
     series_by_id: dict[str, list] = {}
     with ThreadPoolExecutor(max_workers=min(4, max(1, len(entity_ids)))) as executor:
@@ -78,21 +68,13 @@ def candles_csv(
     # here so all series share a timestamp axis and can be rebased together.
     rows_by_ts: dict[str, dict[str, float]] = {}
     for entity_id, series in series_by_id.items():
-        values = []
-        for row in series:
-            if not isinstance(row, dict):
-                continue
-            ts = row.get("ts") or row.get("timestamp") or row.get("time")
-            value = row.get("mid", row.get("close", row.get("value")))
-            if ts is not None and value is not None:
-                values.append((str(ts), float(value)))
+        values = to_series(series)
         if not values:
             return {"ok": False, "error": f"no plottable timeseries returned for {entity_id}"}
         if rebase:
-            base = values[0][1]
-            if base == 0:
+            if values[0][1] == 0:
                 return {"ok": False, "error": f"cannot rebase zero-valued series for {entity_id}"}
-            values = [(ts, 100.0 * value / base) for ts, value in values]
+            values = rebase_series(values)
         for ts, value in values:
             rows_by_ts.setdefault(ts, {})[entity_id] = value
 
@@ -107,8 +89,8 @@ def candles_csv(
 
 def tracking_csv(index: str, output: Path) -> dict:
     positions = data_dir() / "positions"
-    # A clean OpenClaw install has no fills or cached tracking series. Fail
-    # before invoking chart-index.py so the caller gets a useful remedy.
+    # A clean install has no fills or cached tracking series. Fail before
+    # invoking chart-index.py so the caller gets a useful remedy.
     required = [
         positions / f"{index}.last_fill_ts",
         positions / f"{index}.index.series.json",

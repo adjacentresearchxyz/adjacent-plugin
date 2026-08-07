@@ -49,6 +49,7 @@ Run `/adjacent` for help. It exposes:
 - `news_correlation` (live or supplied JSON)
 - `correlation_regime` (supplied JSON only)
 - `news_latest` (live news/latest fetch)
+- `topic_brief` (news + related markets + mid quotes + charts)
 - `candles_chart`
 - `similar_hedges`
 - `snapshot_health`
