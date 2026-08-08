@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 # -------------------------------------------------------------------
@@ -158,6 +159,91 @@ def _font_mono() -> str:
     return ",".join(FONTS["mono"])
 
 
+def _bundled_fonts_dir() -> Path | None:
+    """Resolve the bundled OFL font directory, or None when absent.
+
+    The shared plugin-root resolver (``_paths.plugin_root``) is preferred:
+    it honors ``ADJACENT_PLUGIN_ROOT`` - which a bundled host runtime may
+    set to relocate the tree - and applies ``expanduser().resolve()``.
+    This module stays dependency-light, so the import is lazy and
+    optional; if ``_paths`` is not importable the env var is read
+    directly. In all cases this file's own location
+    (``scripts/../assets/fonts``) is the final fallback, so the fonts
+    still resolve from a copied runtime that preserved the layout.
+    """
+    bases: list[Path] = []
+    try:
+        from _paths import plugin_root
+    except ImportError:
+        override = os.environ.get("ADJACENT_PLUGIN_ROOT")
+        if override:
+            bases.append(Path(override).expanduser().resolve())
+    else:
+        bases.append(plugin_root())
+    bases.append(Path(__file__).resolve().parent.parent)
+    for base in bases:
+        candidate = base / "assets" / "fonts"
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
+_fonts_registered = False
+
+
+def _register_bundled_fonts() -> None:
+    """Register the bundled OFL static TTFs (Inter, IBM Plex Mono).
+
+    This is what makes chart output deterministic across machines: the
+    exact faces the design system names ship with the plugin and are
+    loaded into matplotlib's font manager before the rcParams request
+    them, so renders do not fall through to Helvetica / DejaVu Sans on a
+    host that happens to lack Inter installed system-wide.
+
+    Registers once per process. ``fontManager`` is a process-wide
+    singleton and ``addfont`` appends without deduplication and clears the
+    findfont cache on every call, so re-registering on each
+    ``apply_adjacent_theme`` (twice per chart, once in figure() and once
+    in save()) would grow ttflist unboundedly and thrash the cache. The
+    module-level guard is set on every exit path, including when the
+    assets are absent, so the env/dir lookup does not repeat either.
+
+    Fail-safe: a missing file or a font manager without ``addfont`` is
+    skipped silently, so environments without the bundled assets still
+    render through the font stacks. Never raises.
+    """
+    global _fonts_registered
+    if _fonts_registered:
+        return
+    from matplotlib import font_manager
+
+    directory = _bundled_fonts_dir()
+    if directory is None:
+        _fonts_registered = True
+        return
+    # The public API is the method on the fontManager singleton
+    # (font_manager.fontManager.addfont); guard with getattr so an
+    # unexpected font manager without it is skipped rather than raising.
+    addfont = getattr(font_manager.fontManager, "addfont", None)
+    if addfont is None:
+        _fonts_registered = True
+        return
+    for name in (
+        "Inter-Regular.ttf",
+        "Inter-SemiBold.ttf",
+        "Inter-Bold.ttf",
+        "IBMPlexMono-Regular.ttf",
+        "IBMPlexMono-Bold.ttf",
+    ):
+        path = directory / name
+        try:
+            if path.is_file():
+                addfont(str(path))
+        except Exception:
+            pass
+    _fonts_registered = True
+
+
 def apply_adjacent_theme() -> None:
     """Configure matplotlib + seaborn rcParams to the Adjacent brand.
 
@@ -166,6 +252,12 @@ def apply_adjacent_theme() -> None:
     """
     import matplotlib as mpl
     from matplotlib import font_manager
+
+    # Register the bundled OFL static TTFs before setting rcParams so
+    # matplotlib resolves "Inter" / "IBM Plex Mono" to the vendored faces
+    # rather than falling through the stack. No-op when the assets dir is
+    # absent (e.g. a host without the bundled runtime).
+    _register_bundled_fonts()
 
     try:
         import seaborn as sns  # noqa: F401

@@ -1,0 +1,29 @@
+{
+  "format_version": 1,
+  "tools": [
+    {"name": "adjacent_doctor", "hosts": ["openclaw"], "summary": "Verify the Adjacent plugin installation."},
+    {"name": "adjacent_brief", "hosts": ["openclaw"], "summary": "Run a daily Adjacent market brief."},
+    {"name": "adjacent_snapshot", "hosts": ["openclaw"], "summary": "Build a tradable market snapshot."},
+    {"name": "adjacent_chart", "hosts": ["openclaw"], "summary": "Build a chart artifact."},
+    {"name": "adjacent_movers", "hosts": ["openclaw", "hermes"], "summary": "Scan for threshold-crossing mid-quote moves."},
+    {"name": "adjacent_capabilities", "hosts": ["openclaw"], "summary": "Report available Adjacent data capabilities."},
+    {"name": "adjacent_mcp_query", "hosts": ["openclaw", "hermes"], "summary": "Run a read-only Adjacent MCP query."},
+    {"name": "adjacent_topic_brief", "hosts": ["openclaw", "hermes"], "summary": "Return news, related markets, and mid quotes for a topic."},
+    {"name": "adjacent_news_latest", "hosts": ["openclaw", "hermes"], "summary": "Fetch the latest Adjacent news surface."},
+    {"name": "adjacent_news_correlation", "hosts": ["openclaw", "hermes"], "summary": "Rank news events against minute-aligned mid moves."},
+    {"name": "adjacent_correlation_regime", "hosts": ["openclaw", "hermes"], "summary": "Analyze supplied correlation observations."},
+    {"name": "adjacent_portfolio_snapshot", "hosts": ["openclaw", "hermes"], "summary": "Report read-only portfolio status."},
+    {"name": "adjacent_tracking", "hosts": ["openclaw", "hermes"], "summary": "Produce a per-position mid-based tracking table."},
+    {"name": "adjacent_tracking_table", "hosts": ["openclaw", "hermes"], "summary": "Build a per-position tracking CSV."},
+    {"name": "adjacent_chart_csv", "hosts": ["openclaw", "hermes"], "summary": "Build a per-index chart CSV."},
+    {"name": "adjacent_candles_chart", "hosts": ["openclaw", "hermes"], "summary": "Build a mid-based candle chart CSV."},
+    {"name": "adjacent_similar_hedges", "hosts": ["openclaw", "hermes"], "summary": "Rank similar markets as hedges or proxies."},
+    {"name": "adjacent_snapshot_health", "hosts": ["openclaw", "hermes"], "summary": "Grade public snapshot freshness."},
+    {"name": "adjacent_datawrapper_index", "hosts": ["openclaw", "hermes"], "summary": "Build an index tracking chart CSV."},
+    {"name": "adjacent_http_get", "hosts": ["openclaw", "hermes"], "summary": "Fetch a read-only Adjacent HTTPS surface."},
+    {"name": "adjacent_rebalance_plan", "hosts": ["openclaw", "hermes"], "summary": "Compute a fail-closed dry-run rebalance plan."},
+    {"name": "adjacent_brief_daily", "hosts": ["hermes"], "summary": "Run the Hermes daily Adjacent market brief."},
+    {"name": "adjacent_market_snapshot", "hosts": ["hermes"], "summary": "Build a Hermes Adjacent market snapshot."},
+    {"name": "adjacent_capability_status", "hosts": ["hermes"], "summary": "Report live and unavailable data surfaces."}
+  ]
+}

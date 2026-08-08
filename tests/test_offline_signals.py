@@ -67,6 +67,54 @@ def test_capability_status_intro_flag_prints_only_intro():
     assert "news_latest:" not in result.stdout
 
 
+def test_capability_status_json_includes_runtime_probe():
+    """The --json payload must carry a runtime probe with matplotlib and
+    datawrapper_key booleans, alongside the existing capabilities map and
+    intro_text."""
+    import importlib.util
+
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "capability-status.py"), "--json"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    payload = json.loads(result.stdout)
+    assert "capabilities" in payload, "existing capabilities map must remain"
+    assert "intro_text" in payload, "intro_text must remain"
+    runtime = payload["runtime"]
+    assert isinstance(runtime, dict)
+    assert "matplotlib" in runtime
+    assert isinstance(runtime["matplotlib"], bool)
+    # The probe must reflect the actual importability of matplotlib.
+    assert runtime["matplotlib"] is (
+        importlib.util.find_spec("matplotlib") is not None
+    )
+    assert "datawrapper_key" in runtime
+    assert isinstance(runtime["datawrapper_key"], bool)
+
+
+def test_capability_status_text_mode_prints_charting_line():
+    """The human text output must include a charting line after the
+    capability list, while the intro still leads."""
+    import importlib.util
+
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "capability-status.py")],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert result.stdout.startswith("Adjacent is live.")
+    assert "charting:" in result.stdout
+    has_mpl = importlib.util.find_spec("matplotlib") is not None
+    if has_mpl:
+        assert "matplotlib available" in result.stdout
+    else:
+        assert "matplotlib missing" in result.stdout
+        assert "requirements.txt" in result.stdout
+
+
 def test_shared_data_dir_defaults_to_repository_root(monkeypatch):
     monkeypatch.delenv("ADJACENT_DATA_DIR", raising=False)
     monkeypatch.delenv("ADJACENT_PLUGIN_ROOT", raising=False)

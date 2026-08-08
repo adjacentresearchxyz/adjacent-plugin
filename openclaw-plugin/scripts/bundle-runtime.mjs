@@ -20,13 +20,19 @@ const RUNTIME_DIR = join(PACKAGE_DIR, "runtime");
 
 // Source of truth -> bundled destination. The skills path is the canonical
 // skill set; the package validator treats it as the parity baseline.
+// assets/fonts ships the OFL-licensed Inter and IBM Plex Mono static TTFs
+// so chart output is deterministic in a clean install with no system fonts.
 const SOURCES = [
   { from: join(REPO_ROOT, "scripts"), to: join(RUNTIME_DIR, "scripts") },
   { from: join(REPO_ROOT, "data"), to: join(RUNTIME_DIR, "data") },
   { from: join(REPO_ROOT, "plugins", "adjacent", "skills"), to: join(RUNTIME_DIR, "skills") },
+  { from: join(REPO_ROOT, "assets", "fonts"), to: join(RUNTIME_DIR, "assets", "fonts") },
 ];
 
-const SKIP = new Set(["__pycache__", ".DS_Store", "validate-plugin-packages.py"]);
+// tools.json is a build/test-time catalog (it lists every host, including
+// foreign ones); it is never read at runtime, so it must not ship in a
+// host package or it trips the foreign-platform-name guard.
+const SKIP = new Set(["__pycache__", ".DS_Store", "validate-plugin-packages.py", "tools.json"]);
 
 function main() {
   rmSync(RUNTIME_DIR, { recursive: true, force: true });

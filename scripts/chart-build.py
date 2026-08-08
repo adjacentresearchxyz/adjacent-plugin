@@ -114,7 +114,47 @@ def tracking_csv(index: str, output: Path) -> dict:
     return {"ok": True}
 
 
-def render_png(csv_path: Path, png_path: Path, headline: str, deck: str) -> dict:
+def _derive_headline(columns: dict[str, list[float | None]], timeframe: str) -> str:
+    """Build a finding-oriented headline from the plotted series.
+
+    The house rule is that the headline states the finding, not the chart
+    contents. With a single series we can state the direction and last
+    value; with several we fall back to a generic, non-slug description so
+    the chart never ships a raw id as its title. Always ASCII, `%` not `pp`,
+    no em-dash.
+    """
+    def _clean(name: str) -> str:
+        return name.replace(":", " ").replace("/", " ").strip()
+
+    def _values(col: list[float | None]) -> list[float]:
+        return [v for v in col if v is not None]
+
+    if len(columns) == 1:
+        (label, col), = columns.items()
+        vals = _values(col)
+        if len(vals) < 2 or vals[0] == 0:
+            last = vals[-1] if vals else 0.0
+            return f"{_clean(label)} at {_format_value(last)} over {timeframe}"
+        first, last = vals[0], vals[-1]
+        pct = (last - first) / first * 100.0
+        direction = "up" if pct >= 0 else "down"
+        return (
+            f"{_clean(label)} at {_format_value(last)}, "
+            f"{direction} {abs(pct):.1f}% over {timeframe}"
+        )
+    return f"{len(columns)} mid-quote series compared over {timeframe}"
+
+
+def _format_value(value: float) -> str:
+    """Render a series value for a headline: percent for 0-1 fractions."""
+    if 0.0 <= value <= 1.0:
+        return f"{value * 100:.1f}%"
+    if abs(value) >= 1000:
+        return f"{value:,.0f}"
+    return f"{value:,.2f}"
+
+
+def render_png(csv_path: Path, png_path: Path, headline: str, deck: str, *, timeframe: str = "") -> dict:
     """Render the CSV as an Adjacent-branded chart. Needs matplotlib."""
     sys.path.insert(0, str(scripts_dir()))
     try:
@@ -135,6 +175,12 @@ def render_png(csv_path: Path, png_path: Path, headline: str, deck: str) -> dict
             ]
         if not any(any(value is not None for value in values) for values in columns.values()):
             return {"ok": False, "error": "CSV held no plottable rows"}
+
+        # The headline states the finding, not the chart contents. Derive a
+        # direction/value headline from the data when the caller did not pass
+        # an explicit one, instead of shipping a raw slug as the title.
+        if not headline:
+            headline = _derive_headline(columns, timeframe)
 
         fig, ax = adj.figure(headline=headline, deck=deck)
         legend_entries = [
@@ -243,8 +289,9 @@ def main() -> int:
         rendered = render_png(
             csv_path,
             png_path,
-            headline=f"{stem} mid quote",
+            headline=None,
             deck=f"{args.timeframe}, mid-quote basis",
+            timeframe=args.timeframe,
         )
         if rendered.get("ok"):
             result["artifacts"]["png"] = str(png_path)

@@ -1,0 +1,16 @@
+# Adjacent plugin - local PNG chart rendering dependencies.
+#
+# The shared Python core (scripts/) is standard-library only; these
+# packages are needed only when a workflow renders an Adjacent-branded
+# PNG via scripts/adjacent_chart_style.py. Without them the plugin still
+# returns the chart CSV (PNG rendering is best-effort, never fatal).
+#
+# Install into the Python runtime the plugin uses:
+#   python3 -m pip install -r requirements.txt
+# or into a virtual environment pointed at by ADJACENT_PYTHON.
+#
+# Publishing charts to Datawrapper additionally needs DATAWRAPPER_API_KEY
+# (no pip package); that is a runtime secret, not a dependency here.
+
+matplotlib>=3.5
+numpy>=1.20

@@ -98,7 +98,10 @@ export default defineToolPlugin({
           remedy?: string;
         }> = [];
 
-        const python = await runJsonScript<{ intro_text?: string }>(
+        const python = await runJsonScript<{
+          intro_text?: string;
+          runtime?: { matplotlib?: boolean; datawrapper_key?: boolean };
+        }>(
           "capability-status.py",
           ["--json"],
           { timeoutMs: 20_000 },
@@ -159,6 +162,19 @@ export default defineToolPlugin({
             ? {}
             : { remedy: "Optional. Briefs fall back to a live index list when the watchlist is empty." }),
         });
+
+        const hasMatplotlib = python.ok ? python.data?.runtime?.matplotlib === true : false;
+        checks.push(
+          hasMatplotlib
+            ? { name: "charting", status: "ok", detail: "matplotlib available; branded PNG charts enabled" }
+            : {
+                name: "charting",
+                status: "warn",
+                detail: "matplotlib missing; PNG rendering disabled (CSV output still works)",
+                remedy:
+                  "pip install -r requirements.txt into the plugin's Python runtime to enable branded PNG charts; CSV output still works",
+              },
+        );
 
         const stateDir = resolveStateDir();
         checks.push({ name: "artifacts", status: "ok", detail: `writing to ${stateDir}` });

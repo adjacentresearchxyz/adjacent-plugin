@@ -4,9 +4,34 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
+import os
 
 from _paths import data_dir
+
+
+def runtime_probe() -> dict:
+    """Lightweight, side-effect-free runtime probes for the JSON payload.
+
+    Uses importlib.util.find_spec so we never import matplotlib (which is
+    heavy and pulls a GUI backend) just to ask whether it is installed.
+    """
+    matplotlib_ok = importlib.util.find_spec("matplotlib") is not None
+    return {
+        "matplotlib": matplotlib_ok,
+        "datawrapper_key": bool(os.environ.get("DATAWRAPPER_API_KEY")),
+    }
+
+
+def charting_line(probe: dict) -> str:
+    """Human-readable charting status for the text-mode output."""
+    if probe["matplotlib"]:
+        return "- charting: matplotlib available"
+    return (
+        "- charting: matplotlib missing (PNG disabled; CSV still works; "
+        "pip install -r requirements.txt)"
+    )
 
 
 def capabilities_path():
@@ -48,10 +73,13 @@ def main() -> int:
         print(intro_text)
         return 0
 
+    probe = runtime_probe()
+
     if args.json:
         out = dict(payload)
         if intro_text:
             out["intro_text"] = intro_text
+        out["runtime"] = probe
         print(json.dumps(out, indent=2))
         return 0
 
@@ -63,6 +91,7 @@ def main() -> int:
             f"- {name}: API {capability['api_status']}, "
             f"plugin {capability['plugin_status']}"
         )
+    print(charting_line(probe))
     return 0
 
 

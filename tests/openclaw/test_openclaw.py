@@ -33,31 +33,13 @@ _PLUGIN_ROOT = os.path.normpath(
 )
 OPENCLAW_DIR = os.path.join(_PLUGIN_ROOT, "openclaw-plugin")
 
-# Expected tool names - must match contracts.tools in the manifest and
-# the tool() declarations in src/index.ts.
-EXPECTED_TOOLS = [
-    "adjacent_doctor",
-    "adjacent_brief",
-    "adjacent_snapshot",
-    "adjacent_chart",
-    "adjacent_movers",
-    "adjacent_capabilities",
-    "adjacent_mcp_query",
-    "adjacent_topic_brief",
-    "adjacent_news_latest",
-    "adjacent_news_correlation",
-    "adjacent_correlation_regime",
-    "adjacent_portfolio_snapshot",
-    "adjacent_tracking",
-    "adjacent_tracking_table",
-    "adjacent_chart_csv",
-    "adjacent_candles_chart",
-    "adjacent_similar_hedges",
-    "adjacent_snapshot_health",
-    "adjacent_datawrapper_index",
-    "adjacent_http_get",
-    "adjacent_rebalance_plan",
-]
+# Expected tool names, derived from the canonical catalog.
+with open(os.path.join(_PLUGIN_ROOT, "data", "tools.json"), encoding="utf-8") as _fh:
+    EXPECTED_TOOLS = [
+        item["name"]
+        for item in json.load(_fh)["tools"]
+        if "openclaw" in item["hosts"]
+    ]
 
 # The shared Python core bundled into the tarball so a clean install needs
 # no repo checkout.

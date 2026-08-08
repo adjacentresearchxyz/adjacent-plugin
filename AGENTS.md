@@ -177,6 +177,22 @@ sky, mustard, sage, pink), use a UTC timestamp in rendered
 context already communicates the unit, and label bars outside by
 default with explicit exceptions for large stacked segments.
 
+Canonical chart artifact: the matplotlib PNG produced via
+`scripts/adjacent_chart_style.py` is the canonical chart artifact for
+this plugin. It carries the full editorial layout - headline, deck,
+last-value pill, Heikin-Ashi candles, source credit - and is what
+tracking reports, briefs, and movers scans embed. Datawrapper is for
+interactive embeds only; it shares the brand tokens (palette, series
+cycle, font stacks) but does not replicate the editorial layout. Fonts
+are now bundled under `assets/fonts/` (OFL-licensed Inter and IBM Plex
+Mono static TTFs) and registered by the helper's
+`apply_adjacent_theme()` before rcParams are set, so chart output is
+deterministic across machines and does not fall through to a host's
+system fonts. The helper resolves the font directory relative to its
+own path (or `ADJACENT_PLUGIN_ROOT` when set) and skips silently when
+the assets are absent, so environments without the bundle still render
+through the font stacks.
+
 On-brand summary (see the skill for the full table):
 
 - Canvas `#ece9e2` (figure and plot area - one surface); paper

@@ -83,6 +83,13 @@ def load_json(path: Path) -> dict:
         fail(f"{path.relative_to(ROOT)} is not valid JSON: {exc}")
 
 
+def expected_openclaw_tools() -> set[str]:
+    catalog = load_json(ROOT / "data/tools.json")
+    return {
+        item["name"] for item in catalog["tools"] if "openclaw" in item["hosts"]
+    }
+
+
 def assert_mcp_contract(path: Path) -> None:
     payload = load_json(path)
     servers = payload.get("mcpServers")
@@ -149,29 +156,7 @@ def assert_openclaw_contract() -> None:
     if manifest.get("id") != "adjacent-markets":
         fail("OpenClaw manifest must use id adjacent-markets")
     tools = manifest.get("contracts", {}).get("tools")
-    expected_tools = {
-        "adjacent_doctor",
-        "adjacent_brief",
-        "adjacent_snapshot",
-        "adjacent_chart",
-        "adjacent_movers",
-        "adjacent_capabilities",
-        "adjacent_mcp_query",
-        "adjacent_topic_brief",
-        "adjacent_news_latest",
-        "adjacent_news_correlation",
-        "adjacent_correlation_regime",
-        "adjacent_portfolio_snapshot",
-        "adjacent_tracking",
-        "adjacent_tracking_table",
-        "adjacent_chart_csv",
-        "adjacent_candles_chart",
-        "adjacent_similar_hedges",
-        "adjacent_snapshot_health",
-        "adjacent_datawrapper_index",
-        "adjacent_http_get",
-        "adjacent_rebalance_plan",
-    }
+    expected_tools = expected_openclaw_tools()
     if not isinstance(tools, list) or set(tools) != expected_tools:
         fail("OpenClaw manifest tool contract does not match the supported tools")
     entrypoint = ROOT / "openclaw-plugin/src/index.ts"
@@ -316,7 +301,11 @@ def assert_shared_assets_are_neutral() -> None:
         for path in iter_source_files(ROOT / "scripts")
         if path.name != Path(__file__).name
     )
-    paths = (*SHARED_DOCS, *iter_source_files(ROOT / "data"), *scripts)
+    paths = (
+        *SHARED_DOCS,
+        *(path for path in iter_source_files(ROOT / "data") if path.name != "tools.json"),
+        *scripts,
+    )
     for path in paths:
         text = path.read_text(encoding="utf-8").lower()
         for name in HOST_NAMES:

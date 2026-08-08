@@ -72,16 +72,26 @@ in the working directory, never inside the install. Charts always
 produce a CSV. The PNG needs matplotlib and publishing needs
 `DATAWRAPPER_API_KEY`; both report a reason and a remedy when skipped.
 
-To enable PNGs, install matplotlib in the runtime used by the plugin:
+To enable PNGs, install the Python charting deps from the repo-root
+`requirements.txt` into the runtime used by the plugin:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+or, for an isolated runtime:
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install matplotlib
+.venv/bin/python -m pip install -r requirements.txt
 export ADJACENT_PYTHON="$PWD/.venv/bin/python"
 ```
 
-The plugin reports this command when PNG rendering is requested without
-matplotlib. It does not install packages silently.
+On a clean install without these deps, the plugin still returns the
+chart CSV; PNG rendering is skipped with a reason and a remedy. The
+`adjacent_doctor` tool reports a `charting` check that is `ok` when
+matplotlib is importable and `warn` (with the install command) when it
+is missing. It does not install packages silently.
 
 ## Safety
 
