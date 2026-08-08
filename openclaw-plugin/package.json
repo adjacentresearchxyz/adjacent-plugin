@@ -1,6 +1,6 @@
 {
   "name": "@adjacent/openclaw-plugin",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "Adjacent prediction-market workflows for OpenClaw: daily briefs, tradable snapshots, and chart artifacts. Read-only; never places orders.",
   "type": "module",
   "main": "./dist/index.js",

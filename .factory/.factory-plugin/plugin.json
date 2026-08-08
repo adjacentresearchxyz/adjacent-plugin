@@ -1,6 +1,6 @@
 {
   "name": "adjacent",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "Adjacent prediction-market tools - skills, commands, hooks, droids, MCP servers.",
   "author": {
     "name": "Lucas Kohorst",
