@@ -1,25 +1,11 @@
 from __future__ import annotations
 
-import importlib.util
 import json
 import subprocess
 import sys
 from pathlib import Path
 
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
-def load_script(name: str):
-    path = ROOT / "scripts" / name
-    scripts_path = str(path.parent)
-    if scripts_path not in sys.path:
-        sys.path.insert(0, scripts_path)
-    spec = importlib.util.spec_from_file_location(path.stem.replace("-", "_"), path)
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+from tests._hookutil import ROOT, load_script
 
 
 def test_capability_status_reflects_live_news_and_offline_correlation():
@@ -207,6 +193,175 @@ def test_mcp_call_handshakes_and_parses_sse(monkeypatch):
     assert requested[1]["headers"]["Mcp-Session-Id"] == "sess-1"
     assert requested[2]["body"]["method"] == "tools/call"
     assert requested[2]["path"] == "/custom"
+
+
+def test_mcp_call_retries_on_5xx_then_succeeds(monkeypatch):
+    """A transient HTTP 503 on the first attempt should be retried and
+    eventually succeed when the second attempt returns 200."""
+    module = load_script("_mcp.py")
+    sleeps: list[float] = []
+    monkeypatch.setattr(module.time, "sleep", lambda s: sleeps.append(s))
+    # Each _call_once creates a new connection, so track attempts across
+    # instances with a closure-scoped counter.
+    attempt_count = [0]
+
+    class Response:
+        def __init__(self, status, body, headers):
+            self.status = status
+            self._body = body
+            self._headers = headers
+
+        def read(self):
+            return self._body
+
+        def getheaders(self):
+            return list(self._headers.items())
+
+    class RetryConnection:
+        def __init__(self):
+            self._step = 0
+
+        def request(self, method, path, body, headers):
+            pass
+
+        def getresponse(self):
+            step = self._step
+            self._step += 1
+            if attempt_count[0] == 0 and step == 0:
+                # First attempt: initialize returns 503.
+                attempt_count[0] += 1
+                self._step = 0
+                return Response(503, b"service unavailable", {})
+            # Second attempt: full success.
+            if step == 0:
+                return Response(
+                    200,
+                    b'data: {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05"}}\n\n',
+                    {"mcp-session-id": "sess-2", "content-type": "text/event-stream"},
+                )
+            if step == 1:
+                return Response(202, b"", {})
+            return Response(
+                200,
+                b'data: {"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"{}"}]}}\n\n',
+                {"content-type": "text/event-stream"},
+            )
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr(
+        module.http.client,
+        "HTTPSConnection",
+        lambda *args, **kwargs: RetryConnection(),
+    )
+    result = module.call("example.com", None, "/mcp", "find", {"query": "demo"})
+    assert "result" in result
+    assert len(sleeps) == 1  # one backoff sleep before the retry
+
+
+def test_mcp_call_does_not_retry_on_4xx(monkeypatch):
+    """HTTP 400 is a client error, not transient; no retry."""
+    module = load_script("_mcp.py")
+    sleeps: list[float] = []
+    monkeypatch.setattr(module.time, "sleep", lambda s: sleeps.append(s))
+
+    class Response:
+        def __init__(self, status, body, headers):
+            self.status = status
+            self._body = body
+            self._headers = headers
+
+        def read(self):
+            return self._body
+
+        def getheaders(self):
+            return list(self._headers.items())
+
+    class BadRequestConnection:
+        def __init__(self):
+            self._step = 0
+
+        def request(self, method, path, body, headers):
+            pass
+
+        def getresponse(self):
+            step = self._step
+            self._step += 1
+            if step == 0:
+                return Response(400, b"bad request", {})
+            return Response(202, b"", {})
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr(
+        module.http.client,
+        "HTTPSConnection",
+        lambda *args, **kwargs: BadRequestConnection(),
+    )
+    result = module.call("example.com", None, "/mcp", "find", {"query": "demo"})
+    assert "error" in result
+    assert result["error"]["code"] == 400
+    assert len(sleeps) == 0  # no retry on 4xx
+
+
+def test_mcp_call_retries_on_network_exception(monkeypatch):
+    """A network exception (no HTTP code) is retryable."""
+    module = load_script("_mcp.py")
+    sleeps: list[float] = []
+    monkeypatch.setattr(module.time, "sleep", lambda s: sleeps.append(s))
+    attempts = [0]
+
+    class FlakyConnection:
+        def __init__(self):
+            self._step = 0
+
+        def request(self, method, path, body, headers):
+            attempts[0] += 1
+            if attempts[0] == 1:
+                raise ConnectionRefusedError("connection refused")
+
+        def getresponse(self):
+            step = self._step
+            self._step += 1
+            if step == 0:
+                return Response(
+                    200,
+                    b'data: {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05"}}\n\n',
+                    {"mcp-session-id": "sess-3", "content-type": "text/event-stream"},
+                )
+            if step == 1:
+                return Response(202, b"", {})
+            return Response(
+                200,
+                b'data: {"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"{}"}]}}\n\n',
+                {"content-type": "text/event-stream"},
+            )
+
+        def close(self):
+            return None
+
+    class Response:
+        def __init__(self, status, body, headers):
+            self.status = status
+            self._body = body
+            self._headers = headers
+
+        def read(self):
+            return self._body
+
+        def getheaders(self):
+            return list(self._headers.items())
+
+    monkeypatch.setattr(
+        module.http.client,
+        "HTTPSConnection",
+        lambda *args, **kwargs: FlakyConnection(),
+    )
+    result = module.call("example.com", None, "/mcp", "find", {"query": "demo"})
+    assert "result" in result
+    assert len(sleeps) == 1
 
 
 def test_rebalance_plan_index_must_match_argument(tmp_path):

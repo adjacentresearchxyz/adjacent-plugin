@@ -37,6 +37,16 @@
             "timeout": 30
           }
         ]
+      },
+      {
+        "matcher": "Execute|Create|Edit|ApplyPatch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${DROID_PLUGIN_ROOT}/hooks/post-tool-use/secret-scrubber.py\"",
+            "timeout": 30
+          }
+        ]
       }
     ]
   }

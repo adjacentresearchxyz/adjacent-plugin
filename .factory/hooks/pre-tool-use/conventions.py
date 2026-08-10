@@ -80,7 +80,10 @@ def main() -> int:
         return 0
     if not isinstance(payload, dict):
         payload = {}
-    result = decide(payload.get("tool_name", ""), payload.get("tool_input") or {})
+    try:
+        result = decide(payload.get("tool_name", ""), payload.get("tool_input") or {})
+    except Exception:
+        result = allow("conventions skipped unexpected error")
     json.dump(result, sys.stdout)
     return 0
 

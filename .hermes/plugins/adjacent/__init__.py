@@ -9,7 +9,7 @@ from . import hooks as _hooks
 from . import schemas as _schemas
 from . import tools as _tools
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __all__ = [
     "register",
     "adjacent_command_handler",
@@ -215,6 +215,7 @@ def register(ctx: Any) -> None:
         ctx.register_skill(name, str(_SKILLS_DIR / relative_path))
 
     ctx.register_hook("pre_tool_call", _hooks.pre_tool_call)
+    ctx.register_hook("post_tool_call", _hooks.post_tool_call)
     ctx.register_command(
         "adjacent",
         handler=adjacent_command_handler,

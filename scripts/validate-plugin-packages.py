@@ -108,6 +108,40 @@ def assert_hermes_manifest() -> None:
             fail(f"Hermes manifest is missing {field!r}")
 
 
+def assert_hermes_tool_parity() -> None:
+    """Verify plugin.yaml provides_tools matches TOOL_HANDLERS."""
+    import importlib.util
+
+    plugin_parent = ROOT / ".hermes" / "plugins"
+    if str(plugin_parent) not in sys.path:
+        sys.path.insert(0, str(plugin_parent))
+    import adjacent
+
+    registered = set(adjacent.tools.TOOL_HANDLERS.keys())
+
+    manifest = ROOT / ".hermes" / "plugins" / "adjacent" / "plugin.yaml"
+    text = manifest.read_text(encoding="utf-8")
+    in_tools = False
+    declared = set()
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped == "provides_tools:":
+            in_tools = True
+            continue
+        if in_tools:
+            if stripped.startswith("- "):
+                declared.add(stripped[2:].strip())
+            elif stripped and not stripped.startswith("#"):
+                in_tools = False
+
+    missing = registered - declared
+    extra = declared - registered
+    if missing:
+        fail(f"plugin.yaml provides_tools is missing: {sorted(missing)}")
+    if extra:
+        fail(f"plugin.yaml provides_tools has unknown tools: {sorted(extra)}")
+
+
 def assert_capability_contract() -> None:
     payload = load_json(ROOT / "data/capabilities.json")
     capabilities = payload.get("capabilities", {})
@@ -317,6 +351,7 @@ def main() -> None:
     assert_mcp_contract(ROOT / "plugins/adjacent/mcp.json")
     assert_mcp_contract(ROOT / ".cursor/mcp.json")
     assert_hermes_manifest()
+    assert_hermes_tool_parity()
     assert_capability_contract()
     assert_codex_contract()
     assert_openclaw_contract()

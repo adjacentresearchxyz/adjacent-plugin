@@ -52,6 +52,56 @@ def test_ascii_range_with_percent_allowed():
     assert d["hookSpecificOutput"]["permissionDecision"] == "allow"
 
 
+def test_secret_redactor_blocks_raw_secret_in_write():
+    d = H.pre_tool_call(
+        _payload("Write", content="key = 'sk_live_12345678901234567890'")
+    )
+    assert d["hookSpecificOutput"]["permissionDecision"] == "deny"
+    assert "raw secret" in d["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_secret_redactor_allows_env_template():
+    d = H.pre_tool_call(
+        _payload("Write", content="key = process.env.ADJACENT_API_KEY")
+    )
+    assert d["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+
+def test_chart_style_denies_generic_palette():
+    d = H.pre_tool_call(_payload("Write", content="sns.set_palette('viridis')"))
+    assert d["hookSpecificOutput"]["permissionDecision"] == "deny"
+    assert "chart-style" in d["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_chart_style_allows_adjacent_aware():
+    d = H.pre_tool_call(
+        _payload("Write", content="import adjacent_chart_style as adj")
+    )
+    assert d["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+
+def test_pre_tool_call_combines_all_checks():
+    secret = H.pre_tool_call(
+        _payload("Write", content="sk_live_12345678901234567890")
+    )
+    clean = H.pre_tool_call(_payload("Write", content="clean content"))
+    assert secret["hookSpecificOutput"]["permissionDecision"] == "deny"
+    assert clean["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+
+def test_post_tool_call_logs_mover(tmp_path, monkeypatch):
+    monkeypatch.setattr(H, "LOG_PATH", str(tmp_path / "movers.log"))
+    result = H.post_tool_call(
+        {
+            "tool_name": "mcp__adjacent-markets-dev__price",
+            "tool_response": {"slug": "demo", "moves": {"1d": 0.02}},
+        }
+    )
+    assert result is not None
+    assert "additionalContext" in result["hookSpecificOutput"]
+    assert "demo 1d" in Path(H.LOG_PATH).read_text(encoding="utf-8")
+
+
 # --- deny cases ----------------------------------------------------------
 
 

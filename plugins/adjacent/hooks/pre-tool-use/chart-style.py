@@ -230,7 +230,10 @@ def main() -> int:
     except json.JSONDecodeError:
         json.dump(_allow("chart-style: unreadable payload"), sys.stdout)
         return 0
-    result = decide(payload.get("tool_name", ""), payload.get("tool_input") or {})
+    try:
+        result = decide(payload.get("tool_name", ""), payload.get("tool_input") or {})
+    except Exception:
+        result = _allow("chart-style: unexpected error")
     json.dump(result, sys.stdout)
     return 0
 

@@ -123,6 +123,20 @@ class WorkflowError(ValueError):
     """Raised for unknown workflows or invalid arguments."""
 
 
+# Per-workflow timeout overrides (seconds). The default is 60.
+_WORKFLOW_TIMEOUTS: dict[str, int] = {
+    "market_snapshot": 30,
+    "topic_brief": 120,
+    "rebalance_plan": 45,
+    "brief_daily": 90,
+    "movers": 90,
+}
+
+
+def _timeout_for(workflow: str) -> int:
+    return _WORKFLOW_TIMEOUTS.get(workflow, 60)
+
+
 # --- argv builders --------------------------------------------------------
 
 
@@ -471,26 +485,41 @@ def run_workflow(workflow: str, params: dict[str, Any] | None = None) -> dict[st
     if not any(argv[0] == p for p in ALLOWED_SCRIPTS.values()):
         return {"ok": False, "workflow": workflow, "error": "script not in allowlist"}
     env = os.environ.copy()
+    timeout = _timeout_for(workflow)
     try:
-        proc = subprocess.run(
+        proc = subprocess.Popen(
             [sys.executable, argv[0], *argv[1:]],
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=60,
             env=env,
         )
     except FileNotFoundError as exc:
         return {"ok": False, "workflow": workflow, "error": f"script not found: {exc}"}
-    except subprocess.TimeoutExpired:
-        return {"ok": False, "workflow": workflow, "error": "script timed out after 60s"}
     except Exception as exc:  # noqa: BLE001 - last-resort guard for the host
         return {"ok": False, "workflow": workflow, "error": f"{type(exc).__name__}: {exc}"}
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        try:
+            stdout, stderr = proc.communicate(timeout=5)
+        except Exception:
+            stdout, stderr = "", ""
+        return {
+            "ok": False,
+            "workflow": workflow,
+            "error": f"script timed out after {timeout}s",
+            "partial": True,
+            "stdout": stdout or "",
+            "stderr": stderr or "",
+        }
     return {
         "ok": proc.returncode == 0,
         "workflow": workflow,
         "returncode": proc.returncode,
-        "stdout": proc.stdout,
-        "stderr": proc.stderr,
+        "stdout": stdout,
+        "stderr": stderr,
     }
 
 

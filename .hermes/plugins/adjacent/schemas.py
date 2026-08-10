@@ -53,7 +53,8 @@ _PRICE_TYPE = {
 _OUTPUT_PATH = {
     "type": "string",
     "minLength": 1,
-    "description": "Optional filesystem path to write output to instead of capturing stdout.",
+    "pattern": r"^(?!.*\.\.)",
+    "description": "Optional filesystem path to write output to instead of capturing stdout. Rejects paths containing '..' to prevent directory traversal.",
 }
 
 

@@ -135,6 +135,24 @@ def test_invalid_slug_pattern():
     assert "index" in res["error"]
 
 
+def test_output_path_rejects_directory_traversal():
+    res = _decode(
+        T.adjacent_tracking_table({"index": "demo", "output": "../../etc/passwd"})
+    )
+    assert res["ok"] is False
+    assert "pattern" in res["error"]
+
+
+def test_output_path_accepts_safe_path():
+    res = _decode(
+        T.adjacent_tracking_table({"index": "demo", "output": "/tmp/tracking.csv"})
+    )
+    # ok=True or ok=False depending on whether the script runs, but NOT a
+    # validation error about pattern.
+    if res["ok"] is False and "pattern" in res.get("error", ""):
+        raise AssertionError("safe path was rejected by pattern validation")
+
+
 # --- success path --------------------------------------------------------
 
 
@@ -216,7 +234,7 @@ def test_handler_catches_subprocess_exception(monkeypatch):
     def _boom(*a, **kw):
         raise FileNotFoundError("simulated missing interpreter")
 
-    monkeypatch.setattr(T.subprocess, "run", _boom)
+    monkeypatch.setattr(T.subprocess, "Popen", _boom)
     res = _decode(T.adjacent_portfolio_snapshot({}))
     # No data dir -> the handler still returns JSON (it never raises).
     assert res["ok"] is False
@@ -235,11 +253,18 @@ def test_rebalance_plan_argv_always_non_placing():
 def test_rebalance_plan_never_places(monkeypatch):
     captured: dict = {}
 
-    def _fake_run(cmd, **kw):
-        captured["cmd"] = cmd
-        return subprocess.CompletedProcess(cmd, 0, stdout='{"index":"demo"}', stderr="")
+    class _FakeProc:
+        def __init__(self):
+            self.returncode = 0
 
-    monkeypatch.setattr(T.subprocess, "run", _fake_run)
+        def communicate(self, timeout=None):
+            return '{"index":"demo"}', ""
+
+    def _fake_popen(cmd, **kw):
+        captured["cmd"] = cmd
+        return _FakeProc()
+
+    monkeypatch.setattr(T.subprocess, "Popen", _fake_popen)
     res = _decode(
         T.adjacent_rebalance_plan(
             {"index": "demo", "plan": "/tmp/plan.json"}
@@ -296,10 +321,17 @@ def test_allowlist_excludes_order_scripts():
 def test_every_handler_returns_json_string(monkeypatch):
     # Fake subprocess so handlers with no required args (e.g. news_latest)
     # never touch the network or filesystem during this contract test.
-    def _fake_run(cmd, **kw):
-        return subprocess.CompletedProcess(cmd, 0, stdout="{}", stderr="")
+    class _FakeProc:
+        def __init__(self):
+            self.returncode = 0
 
-    monkeypatch.setattr(T.subprocess, "run", _fake_run)
+        def communicate(self, timeout=None):
+            return "{}", ""
+
+    def _fake_popen(cmd, **kw):
+        return _FakeProc()
+
+    monkeypatch.setattr(T.subprocess, "Popen", _fake_popen)
     for name, handler in T.TOOL_HANDLERS.items():
         out = handler({})
         assert isinstance(out, str), f"{name} did not return a string"
@@ -340,3 +372,44 @@ def test_mcp_query_find_accepts_query():
     assert "republican" in argv
     assert "--type" in argv
 
+
+# --- per-workflow timeouts -----------------------------------------------
+
+
+def test_per_workflow_timeout_overrides():
+    assert T._timeout_for("market_snapshot") == 30
+    assert T._timeout_for("topic_brief") == 120
+    assert T._timeout_for("rebalance_plan") == 45
+    assert T._timeout_for("brief_daily") == 90
+    # Unknown workflows get the 60s default.
+    assert T._timeout_for("unknown") == 60
+
+
+# --- partial output on timeout -------------------------------------------
+
+
+def test_timeout_captures_partial_output(monkeypatch):
+    """On timeout, the handler returns whatever stdout was captured so far
+    with ok=False and partial=True, instead of discarding it."""
+
+    class _SlowProc:
+        def __init__(self):
+            self.returncode = -9
+            self._call = 0
+
+        def kill(self):
+            pass
+
+        def communicate(self, timeout=None):
+            self._call += 1
+            if self._call == 1:
+                raise subprocess.TimeoutExpired(cmd="demo", timeout=30)
+            return "partial json output", ""
+
+    # market_snapshot has a 30s per-workflow timeout.
+    monkeypatch.setattr(T.subprocess, "Popen", lambda *a, **kw: _SlowProc())
+    res = _decode(T.adjacent_market_snapshot({"ids": "kalshi:demo"}))
+    assert res["ok"] is False
+    assert res.get("partial") is True
+    assert res["stdout"] == "partial json output"
+    assert "timed out" in res["error"]

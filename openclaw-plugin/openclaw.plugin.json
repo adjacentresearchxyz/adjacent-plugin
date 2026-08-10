@@ -2,7 +2,7 @@
   "id": "adjacent-markets",
   "name": "Adjacent Markets",
   "description": "Adjacent prediction-market workflows: daily briefs, tradable snapshots, and chart artifacts. Executes read-only workflows and returns structured results with artifact paths. Never places orders or invokes shells.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "activation": {
     "onStartup": true
   },

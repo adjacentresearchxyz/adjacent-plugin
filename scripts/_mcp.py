@@ -193,19 +193,77 @@ def clear_cache() -> None:
     _CACHE.clear()
 
 
+# Retry configuration for transient MCP failures.
+_MAX_RETRIES = 3
+_BACKOFF_SECONDS = (0.5, 1.0, 2.0)
+
+# JSON-RPC server-side error codes worth retrying.
+# -32603: internal error; -32000 to -32099: server error (reserved range).
+_RETRYABLE_RPC_CODES = frozenset([-32603, *range(-32099, -31999)])
+
+
+def _is_retryable_error(result: dict) -> bool:
+    """True if the call result represents a transient error worth retrying.
+
+    Retries on:
+    - Network exceptions and empty responses (no ``code`` key).
+    - HTTP 5xx responses (``code >= 500``).
+    - JSON-RPC internal/server errors (``-32603``, ``-32000`` to ``-32099``).
+
+    Does NOT retry on:
+    - HTTP 4xx (client errors).
+    - JSON-RPC protocol errors (invalid request, method not found, etc.).
+    """
+    error = result.get("error")
+    if not isinstance(error, dict):
+        return False
+    code = error.get("code")
+    if code is None:
+        return True
+    if isinstance(code, int):
+        if code >= 500:
+            return True
+        if code in _RETRYABLE_RPC_CODES:
+            return True
+    return False
+
+
 def call(
     host: str,
     api_key: str | None,
     endpoint: str,
     tool: str,
     args: dict,
+    *,
+    max_retries: int = _MAX_RETRIES,
 ) -> dict:
     """Call one Adjacent MCP tool with a full session handshake.
 
-    Returns the JSON-RPC envelope for the tools/call response. On transport
-    or protocol failure returns ``{"error": ...}`` so callers can keep a
-    single shape.
+    Retries up to ``max_retries`` times on transient failures (network
+    exceptions, HTTP 5xx, JSON-RPC server errors) with exponential
+    backoff (0.5s, 1s, 2s). Returns the JSON-RPC envelope for the
+    tools/call response. On transport or protocol failure returns
+    ``{"error": ...}`` so callers can keep a single shape.
     """
+    last_result: dict = {}
+    for attempt in range(max_retries + 1):
+        result = _call_once(host, api_key, endpoint, tool, args)
+        if "error" not in result or not _is_retryable_error(result):
+            return result
+        last_result = result
+        if attempt < max_retries:
+            time.sleep(_BACKOFF_SECONDS[min(attempt, len(_BACKOFF_SECONDS) - 1)])
+    return last_result
+
+
+def _call_once(
+    host: str,
+    api_key: str | None,
+    endpoint: str,
+    tool: str,
+    args: dict,
+) -> dict:
+    """Single MCP call attempt with a full session handshake."""
     url = build_url(host, api_key, endpoint)
     parsed = urlparse(url)
     path = parsed.path + ("?" + parsed.query if parsed.query else "")

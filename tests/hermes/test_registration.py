@@ -30,6 +30,28 @@ def test_register_full(fake_ctx):
     assert "adjacent" in fake_ctx.commands
 
 
+def test_plugin_yaml_provides_tools_matches_handlers():
+    """plugin.yaml provides_tools must list every TOOL_HANDLERS key."""
+    manifest = Path(adjacent.__file__).parent / "plugin.yaml"
+    text = manifest.read_text(encoding="utf-8")
+    in_tools = False
+    declared = set()
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped == "provides_tools:":
+            in_tools = True
+            continue
+        if in_tools:
+            if stripped.startswith("- "):
+                declared.add(stripped[2:].strip())
+            elif stripped and not stripped.startswith("#"):
+                in_tools = False
+    assert declared == set(adjacent.tools.TOOL_HANDLERS.keys()), (
+        f"manifest declares {sorted(declared)} but handlers register "
+        f"{sorted(adjacent.tools.TOOL_HANDLERS.keys())}"
+    )
+
+
 def test_register_tool_uses_documented_kwargs(fake_ctx):
     adjacent.register(fake_ctx)
     for name, entry in fake_ctx.tools.items():

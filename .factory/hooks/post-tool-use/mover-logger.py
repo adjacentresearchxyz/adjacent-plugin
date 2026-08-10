@@ -71,7 +71,10 @@ def main() -> int:
     except json.JSONDecodeError:
         json.dump({"continue": True}, sys.stdout)
         return 0
-    result = emit_extra_context(payload)
+    try:
+        result = emit_extra_context(payload)
+    except Exception:
+        result = None
     if result is None:
         json.dump({"continue": True}, sys.stdout)
     else:

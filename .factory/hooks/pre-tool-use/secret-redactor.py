@@ -50,6 +50,17 @@ PRINT_PATTERNS = (
     re.compile(r"\bprintenv\b[^\n]*(?:" + ENV_NAME + r")"),
     re.compile(r"\benv\b\s*\|"),
     re.compile(r"\bhead\b[^\n]*\${?(?:" + ENV_NAME + r")\}?"),
+    # Catch-all: block any command that references a blocked env var,
+    # regardless of the command verb. This catches printf, python, curl,
+    # base64, strings, xxd, tail, and any other exfiltration vector.
+    re.compile(r"\${?" + ENV_NAME + r"}?"),
+    # Block bare env var names too - covers programmatic reads such as
+    # python "os.environ['KALSHI_API_KEY']" that do not use $ expansion.
+    re.compile(ENV_NAME),
+    # printenv with no arguments prints ALL env vars including secrets.
+    re.compile(r"\bprintenv\b\s*$"),
+    # env with no pipe also prints all env vars.
+    re.compile(r"\benv\b\s*$"),
 )
 
 # Files that hold secrets; reading them is suspicious regardless of the verb.
@@ -109,7 +120,10 @@ def main() -> int:
         return 0
     if not isinstance(payload, dict):
         payload = {}
-    result = decide(payload.get("tool_name", ""), payload.get("tool_input") or {})
+    try:
+        result = decide(payload.get("tool_name", ""), payload.get("tool_input") or {})
+    except Exception:
+        result = allow("redactor skipped unexpected error")
     json.dump(result, sys.stdout)
     return 0
 

@@ -135,11 +135,26 @@ The `adjacent-index-movers` skill has the canonical formulas.
 
 ## Output safety
 
-The `secret-redactor` hook scrubs `ADJACENT_API_KEY`, `KALSHI_API_KEY`,
-`KALSHI_PASSPHRASE`, `KALSHI_RSA_KEY_PATH`, `DATAWRAPPER_API_KEY`, and
-`MCP_DUNE_API_KEY` from any Bash tool output before it is persisted to the
-trajectory log. It does not modify command behavior; it only rewrites the
-captured output.
+Two hooks defend against secrets leaking into the trajectory log:
+
+- The **pre-tool-use** `secret-redactor` hook BLOCKS commands that would
+  print secrets (`echo`, `cat`, `printenv`, `env`, `curl -H "Authorization:
+  Bearer $..."`, etc.) and Write/Edit/ApplyPatch content containing raw
+  secret tokens. It denies the call before it runs.
+- The **post-tool-use** `secret-scrubber` hook scans tool output
+  (`stdout`, `stderr`, and other response string fields) for raw secret
+  patterns (`sk_live_*`, `dwk_*`, `Bearer` tokens, PEM private keys) and
+  reports what was redacted via `additionalContext`. It is defense-in-depth:
+  any secret that slips past the pre-tool-use block is flagged after the
+  call returns.
+
+Neither hook modifies command behavior. The pre-tool-use hook denies the
+call; the post-tool-use hook reports what was redacted. The blocked env var
+names cover `ADJACENT_API_KEY`, `KALSHI_API_KEY`, `KALSHI_PASSPHRASE`,
+`KALSHI_RSA_KEY_PATH`, `DATAWRAPPER_API_KEY`, and `MCP_DUNE_API_KEY`. The
+post-tool-use scrubber only catches raw secret values, not env-var-expanded
+output; the pre-tool-use blocker is the primary defense against env-var
+expansion.
 
 ## Chart branding (every chart is an Adjacent chart)
 

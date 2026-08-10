@@ -1,5 +1,5 @@
 name: adjacent
-version: 1.0.0
+version: 1.0.1
 description: >-
   Hermes-native Adjacent prediction-market plugin. Exposes safe,
   allowlisted local-script workflows (portfolio snapshot, tracking,
@@ -10,14 +10,18 @@ description: >-
 author: Lucas Kohorst
 
 provides_tools:
+  - adjacent_brief_daily
   - adjacent_portfolio_snapshot
   - adjacent_tracking
   - adjacent_chart_csv
   - adjacent_mcp_query
   - adjacent_tracking_table
+  - adjacent_topic_brief
   - adjacent_rebalance_plan
   - adjacent_datawrapper_index
   - adjacent_capability_status
+  - adjacent_market_snapshot
+  - adjacent_movers
   - adjacent_news_correlation
   - adjacent_correlation_regime
   - adjacent_news_latest
@@ -28,3 +32,4 @@ provides_tools:
 
 provides_hooks:
   - pre_tool_call
+  - post_tool_call

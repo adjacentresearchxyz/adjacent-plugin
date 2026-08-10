@@ -22,6 +22,7 @@ import csv
 import json
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -206,16 +207,31 @@ def main() -> int:
     skipped: list[dict] = []
     # An id list carries no data of its own, so it always needs the quote leg.
     want_quotes = args.quotes or resolved_by == "ids"
+
+    # Build base rows first so enrichment can run in parallel.
+    base_rows = []
     for raw in raw_rows[: args.limit]:
         row = base_row(raw)
-        if not row["id"]:
-            continue
-        if want_quotes:
+        if row["id"]:
+            base_rows.append(row)
+
+    if want_quotes and base_rows:
+        def _enrich_safe(row: dict) -> tuple[dict, dict | None]:
             try:
-                row = enrich(row, tier, api_key, args.timeframe)
+                return enrich(row, tier, api_key, args.timeframe), None
             except McpError as exc:
-                skipped.append({"id": row["id"], "reason": str(exc)[:200]})
-        rows.append(row)
+                return row, {"id": row["id"], "reason": str(exc)[:200]}
+
+        # Each enrich() call is an independent MCP price round trip, so
+        # parallel pricing is the biggest win for multi-row snapshots.
+        with ThreadPoolExecutor(max_workers=min(8, len(base_rows))) as pool:
+            results = list(pool.map(_enrich_safe, base_rows))
+        for row, skip in results:
+            if skip is not None:
+                skipped.append(skip)
+            rows.append(row)
+    else:
+        rows = base_rows
 
     result = {
         "format_version": 1,
