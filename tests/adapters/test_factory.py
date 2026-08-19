@@ -65,6 +65,7 @@ EXPECTED_SKILLS = [
     "datawrapper-tables",
     "kalshi-api",
     "kalshi-direct-indexing",
+    "using-adjacent",
 ]
 
 
@@ -236,7 +237,7 @@ class TestFactoryHooksJson(unittest.TestCase):
     def test_events_are_supported_names(self):
         for event in self._hooks():
             with self.subTest(event=event):
-                self.assertIn(event, ("PreToolUse", "PostToolUse"))
+                self.assertIn(event, ("PreToolUse", "PostToolUse", "SessionStart"))
 
     def test_hook_scripts_exist(self):
         for event, groups in self._hooks().items():

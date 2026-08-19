@@ -1,6 +1,6 @@
 ---
 name: adjacent-chart-style
-description: Adjacent chart branding spec - palette, type, grid, accents, and source line for every chart this plugin produces (Seaborn, matplotlib, Plotly, Datawrapper). Mirrors the Adjacent Design System tokens. Apply before any chart is rendered or published.
+description: Use when rendering or publishing any chart (PNG, SVG, Plotly, Datawrapper, matplotlib, or seaborn) for Adjacent output.
 version: 1.1.0
 category: data-science
 allowed-tools:

@@ -1,6 +1,6 @@
 ---
 name: adjacent-data-surfaces
-description: Guidance and recipes for Adjacent docs, similar markets, candles, public snapshots, exports, news, and correlation capabilities.
+description: Use when the task needs docs, similar markets, candles, public snapshots, exports, news/latest, or capability status before calling a surface.
 version: 2.0.0
 category: research
 ---

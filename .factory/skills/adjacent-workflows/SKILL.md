@@ -1,6 +1,6 @@
 ---
 name: adjacent-workflows
-description: Shared Adjacent workflow defaults and routing for briefs, movers, charts, Q&A, portfolio tracking, and rebalances.
+description: Use when routing an Adjacent request to a brief, movers scan, chart, Q&A, portfolio snapshot, or rebalance and the matching command is not already loaded.
 version: 1.0.0
 category: productivity
 ---
@@ -8,7 +8,20 @@ category: productivity
 # Adjacent workflows
 
 Use this skill to route Adjacent tasks to the correct command, skill,
-and specialist agent.
+and specialist agent. Load `using-adjacent` first at session start.
+
+## Evidence before claims
+
+No mid, move, tracking error, or P&L figure without a fresh `price`
+call or producer script in this turn. Typed failures are answers.
+Never invent an endpoint response.
+
+## Specialist dispatch
+
+When handing work to coordinator, index-monitor, data-monitor,
+briefing-writer, or ask-assistant, send a fresh brief: ids or
+watchlist, MCP tier, thresholds, and output shape. Do not forward
+the full conversation. Each specialist loads its own skill.
 
 ## Voice
 

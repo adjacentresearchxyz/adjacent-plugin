@@ -35,7 +35,9 @@ Droids: `coordinator`, `index-monitor`, `data-monitor`,
 
 Hooks map to this host's tool ids: `conventions` and `secret-redactor`
 and `chart-style` run on `Create` / `Edit` / `ApplyPatch` and `Execute`;
-`mover-logger` runs after any `price` MCP call.
+`mover-logger` runs after any `price` MCP call. `SessionStart` injects
+the `using-adjacent` skill so routing and the evidence-before-claims
+rule load at the beginning of a session.
 
 ## Data tier
 

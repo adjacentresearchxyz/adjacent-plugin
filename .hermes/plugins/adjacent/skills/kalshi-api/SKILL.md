@@ -1,6 +1,6 @@
 ---
 name: kalshi-api
-description: Kalshi V2 API auth (RSA-PSS), order placement, cancel, settlement reads. Scripts and commands depend on this skill for the V2 endpoint conventions.
+description: Use when calling Kalshi HTTP endpoints for orders, cancels, or settlement reads.
 version: 1.0.0
 category: software-development
 allowed-tools:

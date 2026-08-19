@@ -8,8 +8,10 @@ mcpServers: ["adjacent-markets", "adjacent-markets-dev"]
 
 # Adjacent coordinator
 
-Load the `adjacent-workflows` skill and coordinate the daily loop by
-dispatching to the specialist droids. Do not duplicate their work.
+Load `using-adjacent` then `adjacent-workflows`. Coordinate the daily
+loop by dispatching to specialist droids with a fresh brief (ids or
+watchlist, MCP tier, thresholds, output shape). Do not forward the
+full conversation or duplicate their work.
 
 ## Crew
 
