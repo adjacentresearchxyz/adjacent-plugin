@@ -1,6 +1,6 @@
 ---
 name: datawrapper-tables
-description: CSV to Datawrapper API to embed-link workflow with styling conventions. Drives the /charts/datawrapper-publish slash command and the datawrapper-* scripts in scripts/.
+description: Use when publishing a CSV as a Datawrapper chart or embed.
 version: 1.1.0
 category: data-science
 allowed-tools:

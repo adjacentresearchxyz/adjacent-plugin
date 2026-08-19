@@ -1,6 +1,6 @@
 ---
 name: hermes
-description: Hermes host guidance for the native Adjacent tools, skills, hook, and /adjacent command.
+description: Use when running native Adjacent tools or the /adjacent command on this host.
 version: 1.0.0
 category: productivity
 ---

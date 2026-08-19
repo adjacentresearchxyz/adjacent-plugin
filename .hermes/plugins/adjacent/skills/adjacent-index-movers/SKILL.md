@@ -1,6 +1,6 @@
 ---
 name: adjacent-index-movers
-description: Adjacent index move thresholds with explicit formulas and a clean alerting policy. Drives the /data/index-movers scan and the movers log.
+description: Use when scanning what moved, alerting on 1D/7D/30D index moves, or appending to the movers log.
 version: 1.2.0
 category: research
 allowed-tools:

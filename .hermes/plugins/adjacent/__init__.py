@@ -33,6 +33,7 @@ BUNDLED_SKILLS: dict[str, str] = {
     "adjacent-direct-index": "adjacent-direct-index/SKILL.md",
     "adjacent-chart-style": "adjacent-chart-style/SKILL.md",
     "adjacent-workflows": "adjacent-workflows/SKILL.md",
+    "using-adjacent": "using-adjacent/SKILL.md",
     "briefings": "briefings/SKILL.md",
     "kalshi-api": "kalshi-api/SKILL.md",
     "kalshi-direct-indexing": "kalshi-direct-indexing/SKILL.md",
