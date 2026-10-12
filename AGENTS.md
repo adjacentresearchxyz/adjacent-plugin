@@ -47,6 +47,18 @@ Kalshi specifics:
 - Tracking error components: drift, selection, fee impact, fill-queue
   penalty.
 
+## Skill discovery
+
+Skill YAML `description` fields are triggering conditions only. They
+start with `Use when` and do not summarize the workflow, so agents
+load the body instead of improvising from the blurb.
+
+`using-adjacent` is the session bootstrap: load the matching Adjacent
+skill before discovery, pricing, charts, briefs, or orders. No mid,
+move, tracking error, or P&L figure without a fresh `price` call or
+producer script in this turn. Typed failures are answers. Never invent
+an endpoint response.
+
 ## Writing rules (enforced by `hooks/pre-tool-use/conventions.py`)
 
 - ASCII `-` bullets; never the unicode bullet glyph (codepoint U+2022).

@@ -1,6 +1,6 @@
 ---
 name: adjacent-news-correlation
-description: News-to-mid correlation from the live news/latest surface or supplied JSON.
+description: Use when explaining a mid move from headlines, ranking live news against prices, or correlating supplied article JSON to markets.
 version: 1.2.0
 category: research
 allowed-tools:

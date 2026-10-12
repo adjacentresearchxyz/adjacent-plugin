@@ -1,6 +1,6 @@
 ---
 name: adjacent-markets
-description: Adjacent index monitoring - mid-quote pricing convention, SMA smoothing, dev vs prod MCP hygiene, SPX cross-reference, and first-use onboarding intro.
+description: Use when listing, finding, or pricing Adjacent indices or markets, choosing MCP tier, or onboarding a first-use install.
 version: 1.2.1
 category: research
 allowed-tools:

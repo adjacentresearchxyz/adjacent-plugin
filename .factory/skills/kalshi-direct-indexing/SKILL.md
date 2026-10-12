@@ -1,6 +1,6 @@
 ---
 name: kalshi-direct-indexing
-description: Allocation math, tracking error formulas, Kalshi balance quirks, fee accounting for direct-index replication on Kalshi.
+description: Use when sizing Kalshi index replication, computing tracking error, or reconciling settled vs pending balances.
 version: 1.0.0
 category: productivity
 allowed-tools:

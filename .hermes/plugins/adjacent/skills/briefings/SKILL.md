@@ -1,6 +1,6 @@
 ---
 name: briefings
-description: Morning briefing format rules - ASCII bullets, percent not percentage points, no em-dash, no emoji, mid-quote pricing.
+description: Use when writing a morning brief, alert, or published Adjacent update.
 version: 1.1.0
 category: productivity
 ---

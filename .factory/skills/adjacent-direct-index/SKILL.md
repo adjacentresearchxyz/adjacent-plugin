@@ -1,6 +1,6 @@
 ---
 name: adjacent-direct-index
-description: Replicate any Adjacent index by buying its constituent markets on a connected exchange (Kalshi today; the dispatcher supports additional adapters). Includes the weekday 16:00 ET rebalance workflow.
+description: Use when replicating an Adjacent index on a connected exchange, computing constituent weights, or running a weekday rebalance.
 version: 1.1.0
 category: software-development
 allowed-tools:

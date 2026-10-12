@@ -1,0 +1,20 @@
+---
+description: Load Adjacent skills before discovery, pricing, charts, briefs, or orders.
+globs: ["*.md", "*.py", "*.ts", "*.tsx", "*.json"]
+alwaysApply: true
+---
+
+# Using Adjacent
+
+This workspace ships Adjacent skills. Treat `using-adjacent` as the
+session bootstrap: check skills before MCP calls, scripts, or orders.
+
+- Load the matching skill before acting. Routing lives in
+  `adjacent-workflows`.
+- Mid quotes for every price, return, move, and tracking figure.
+- No mid, move, tracking error, or P&L figure without a fresh `price`
+  call or producer script in this turn.
+- Never invent endpoint responses or slugs.
+- Charts load `adjacent-chart-style` before render or publish.
+- Trading is fail-closed. Dry-run unless the user explicitly places
+  orders against a catalog with placeholders off.

@@ -35,6 +35,7 @@ EXPECTED_MDC_RULES = [
     "adjacent-conventions.mdc",
     "adjacent-json.mdc",
     "adjacent-data-surfaces.mdc",
+    "using-adjacent.mdc",
 ]
 
 # Canonical MCP endpoint URLs (must match plugins/adjacent/mcp.json).

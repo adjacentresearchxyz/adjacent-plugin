@@ -1,12 +1,6 @@
 ---
 name: adjacent-topic-brief
-description: >
-  Use when the user asks about a person, topic, or event and wants news
-  and prediction markets (e.g. "tell me about trump", "updates on
-  washington football", "what's going on with X", "news and markets for
-  Y", "topic brief Z"). Pulls news bullets, a short take, related markets
-  with mid quotes, and at least one Adjacent-branded chart PNG via
-  scripts/topic-brief.py.
+description: Use when the user asks about a person, topic, or event and wants news plus prediction markets together.
 version: 1.1.0
 category: research
 ---

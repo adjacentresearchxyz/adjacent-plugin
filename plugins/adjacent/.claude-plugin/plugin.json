@@ -20,6 +20,11 @@
   "mcpServers": "mcp.json",
   "hooks": [
     {
+      "event": "SessionStart",
+      "match": { "source": ["startup", "resume", "clear", "compact"] },
+      "script": "hooks/session-start.py"
+    },
+    {
       "event": "PreToolUse",
       "match": { "tool_name": ["Write", "Edit", "MultiEdit"] },
       "script": "hooks/pre-tool-use/conventions.py"
