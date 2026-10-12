@@ -85,7 +85,7 @@ Never name a font directly in chart code; use `adj.FONTS["main"]`,
 `["serif"]`, `["mono"]`.
 
 - Title: Inter, bold, left-aligned, ink. No em-dash, no emoji.
-- Subtitle / deck: serif, regular, `fg-2`. The identifier, one word.
+- Subtitle / deck: serif, regular, `fg-2`. One factual line: venue, contract, unit.
 - Tick labels + data callouts: mono, tabular, ink.
 - Source eyebrow: Inter, 8.5px, `fg-3`, bottom-left.
 
@@ -206,14 +206,20 @@ adj.apply_adjacent_theme()   # call before any plt.*/sns.*
 | `FONTS` | main / serif / mono stacks |
 | `SOURCE_DEFAULT` | exactly `"Adjacent"` |
 | `apply_adjacent_theme()` / `apply_adjacent_style()` | rcParams + seaborn theme; sets axes.facecolor = canvas |
-| `figure(headline, deck, source, figsize, panels)` | themed figure factory; declares the header + footer |
+| `figure(headline, deck, source, figsize, panels)` | path layout; `save()` draws the headline, deck, and source line |
+| `path_and_rank(headline, deck, path_label=None, rank_label=None, figsize=(10.4, 4.8), source=None, width_ratios=(2.1, 1.0))` | path plus a rank pane; returns `(fig, path_ax, rank_ax)` |
+| `stack_figure(headline, deck, top_label=None, bottom_label=None, figsize=(7.6, 5.8), source=None)` | level over a flow; returns `(fig, top_ax, bottom_ax)` |
+| `rank_bars(ax, labels, values, colors=None, fmt=None)` | horizontal ranking; does not guess percent; default color is the lone-series deep green |
+| `pane_label` | optional pane name, at most four words, not a y-axis title |
+| `highlight_window(ax, x0, x1)` | quiet mustard wash and no text |
+| `delta_tag(ax, x, y, text)` | number only (`+17.7%` or `-30pt`); anything else raises `ValueError` |
 | `frame(ax)` | spine / grid styling per brand |
 | `y_axis(ax, kind, unit_on_top, decimals)` | y-axis styling; `kind` in percent / currency / number / level |
 | `format_date_axis(ax, concise, fmt, rotation, maxticks)` | dates only, concise by default, offset suppressed, hard tick cap |
 | `end_label(ax, x, y, text, color, above, dx, dy)` | endpoint callout, offset off the line |
 | `series_label(ax, x, y, text, color, dx, dy)` | inline series label at the right end |
 | `last_value(ax, x, y, text, color, reference)` | closing-value filled pill + dotted reference line |
-| `event_markers(ax, events, rule, wrap)` | dated event rules + labels |
+| `event_markers(ax, events, rule, wrap)` | exactly one event; optional label, at most four words, on the ink rule, no arrow |
 | `bar_labels(ax, bars, values, fmt, color)` | bar value labels (handles negatives). **No `fontsize` kwarg** - fixed helper size; use `ax.tick_params` / `ax.text` for larger labels |
 | `percent_formatter()` / `currency_formatter()` / `number_formatter()` | tick formatters |
 | `title_block(ax, title, subtitle)` | declare headline + deck on an existing figure |
@@ -235,6 +241,20 @@ adj.apply_adjacent_theme()   # call before any plt.*/sns.*
   owns layout; it returns the absolute path written.
 - `save()` re-applies the theme, sets canvas facecolor on every axes,
   hides top / right / left spines, and styles tick labels mono.
+
+### Layouts and annotation budget
+
+A new chart uses path, `path_and_rank`, or `stack_figure`. Path is `figure`. `save()` draws the headline, the deck, and the source line on all three.
+
+Path is one to six lines. `swatch_legend` names them. `end_label` or `series_label` puts the latest number at the right, in the series color. No words inside the plot.
+
+`path_and_rank` returns `(fig, path_ax, rank_ax)`. The left pane is the path. The right pane is `rank_bars`. A pane label from `pane_label` is optional, at most four words, and it is not a y-axis title. `rank_bars` does not guess percent. Pass `fmt` when the values need a `%` sign. The default bar color is the lone-series deep green. Pass `colors` for a signed or focus treatment using `UP`, `DOWN`, or `SERIES`.
+
+`stack_figure` returns `(fig, top_ax, bottom_ax)`. The rows share time and use different units. The top row is the level. The bottom row is the flow, volume, or contribution. `highlight_window` marks a window with a quiet mustard wash and no text.
+
+The headline is the finding, with the number, and it can carry the cause. The deck is one factual line: venue, contract, unit. Example: `Kalshi copper close on 2026-10-30, odds above each strike (USD/lb)`. Plot text is the latest number, in the series color. One event per chart. The label is optional, at most four words, sits on the vertical ink rule, and has no arrow. A longer label raises `ValueError`. `delta_tag` is a number only, matching `+17.7%` or `-30pt`. No date, no words, no arrow. Cause and method that do not fit the headline or the deck go in the message under the image. A 0-100 probability axis may print the percent sign on each round tick. Other charts keep the unit on the top tick only.
+
+Section 4's one-off recipes remain historical exceptions.
 
 ---
 

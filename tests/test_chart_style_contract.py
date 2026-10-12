@@ -137,6 +137,65 @@ def test_heikin_ashi_transform_matches_house_formulas():
     assert ha[1][3] == 11.5
 
 
+def _expect_value_error(fn, match: str | None = None) -> None:
+    try:
+        fn()
+    except ValueError as exc:
+        if match is not None:
+            assert match in str(exc), str(exc)
+        return
+    raise AssertionError("expected ValueError")
+
+
+def test_chart_grammar_exports_are_callable():
+    adj = _load_helper()
+    for name in (
+        "path_and_rank",
+        "stack_figure",
+        "pane_label",
+        "rank_bars",
+        "delta_tag",
+        "highlight_window",
+        "event_markers",
+    ):
+        assert callable(getattr(adj, name, None)), f"missing export: {name}"
+
+
+def test_chart_grammar_signatures():
+    adj = _load_helper()
+    path_params = inspect.signature(adj.path_and_rank).parameters
+    for name in ("headline", "deck", "path_label", "rank_label"):
+        assert name in path_params, name
+    stack_params = inspect.signature(adj.stack_figure).parameters
+    for name in ("headline", "deck", "top_label", "bottom_label"):
+        assert name in stack_params, name
+    assert "text" in inspect.signature(adj.delta_tag).parameters
+
+
+def test_chart_grammar_rejects_bad_labels_without_drawing():
+    """Rejections happen before any axes method, so ax can be None."""
+    adj = _load_helper()
+    _expect_value_error(
+        lambda: adj.pane_label(None, "one two three four five"),
+        "pane label is at most four words",
+    )
+    _expect_value_error(
+        lambda: adj.delta_tag(None, 0, 0, "Russia starts easing the ban"),
+    )
+    _expect_value_error(
+        lambda: adj.delta_tag(None, 0, 0, "+17.7 " + ("p" * 2)),
+    )
+    _expect_value_error(
+        lambda: adj.event_markers(
+            None, [(0, "Russia starts easing its diesel export ban")],
+        ),
+    )
+    _expect_value_error(
+        lambda: adj.event_markers(None, [(0, "Deal"), (1, "Fade")]),
+        "a chart takes one event mark",
+    )
+
+
 # -------------------------------------------------------------------
 # Host skill presence and cross-host references
 # -------------------------------------------------------------------

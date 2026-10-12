@@ -227,10 +227,12 @@ On-brand summary (see the skill for the full table):
   series, never a lone line by direction.
 - Source credit bottom-left: `Source: Adjacent YYYY-MM-DD HH:MM UTC`. No wordmark, no
   divider rule, no basis clause.
-- Headline states the finding; the deck is just the identifier.
+- Headline states the finding; the deck is one factual line (venue, contract, unit).
 - Axis ticks carry the unit on the top tick only; stated values use
   `0.00%`. Never `pp`. No em-dash, no emoji.
 - Candles: Heikin-Ashi only (never raw candlesticks).
+
+A new chart uses one of three layouts in `scripts/adjacent_chart_style.py`. Path is `figure`. `path_and_rank` puts the path beside a ranking. `stack_figure` puts a level over a flow. The annotation budget is one event, at most four words, with no arrow. Delta tags are numbers (`+17.7%` or `-30pt`). Do not put a cause essay inside the plot.
 
 Enforcement:
 
