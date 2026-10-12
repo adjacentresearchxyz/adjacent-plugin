@@ -33,6 +33,7 @@ available with no imports.
 from __future__ import annotations
 
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -386,15 +387,14 @@ def figure(
 
         fig, ax = adj.figure(
             headline="Republican index broke out after the Senate vote",
-            deck="RED",
+            deck="Kalshi, senate control, mid",
         )
         adj.area_series(ax, xs, ys)
         adj.save(fig, "red.png")
 
-    Two lines of text and nothing else: the headline states the finding and
-    the deck names the series. Anything a reader can infer from the axes -
-    the timeframe, the pricing basis, the word "index" - stays off the
-    chart.
+    The headline states the finding. The deck is one factual line: the
+    venue, the contract, and the unit. It is not a second headline, and
+    it is not capped at a single word.
 
     Pass ``panels=(rows, cols)`` for a small-multiple grid, which returns
     the axes array instead of one axis.
@@ -442,6 +442,118 @@ def frame(ax) -> Any:
     ax.tick_params(axis="y", length=0)
     ax.tick_params(axis="x", length=4, width=0.8, color=p["rule"])
     return ax
+
+
+def _short_label(text: str, kind: str) -> str:
+    """Return a one-line label of at most four words, or raise ValueError."""
+    if (
+        not isinstance(text, str)
+        or not text.strip()
+        or "\n" in text
+        or "\r" in text
+        or len(text.split()) > 4
+    ):
+        raise ValueError(f"the {kind} is at most four words")
+    return text
+
+
+def pane_label(ax, text: str) -> Any:
+    """Left-aligned pane name above one axes.
+
+    Not a y-axis title and not the figure headline. At most four words,
+    on one line. The theme's large bold title is overridden: this label
+    is secondary.
+    """
+    shown = _short_label(text, "pane label")
+    ax.set_title(
+        shown,
+        loc="left",
+        fontsize=10,
+        color=PALETTE["fg-2"],
+        fontweight="regular",
+        pad=6,
+        fontfamily=FONTS["main"],
+    )
+    return ax
+
+
+def _declare_chrome(fig, axes, *, headline, deck, source) -> None:
+    """Record headline, deck, and source, then frame each axes."""
+    meta = _meta(fig)
+    meta.update(headline=headline, deck=deck)
+    if source is not None:
+        meta["source"] = source
+    for ax in axes:
+        frame(ax)
+
+
+def path_and_rank(
+    *,
+    headline: str,
+    deck: str,
+    path_label: str | None = None,
+    rank_label: str | None = None,
+    figsize: tuple[float, float] = (10.4, 4.8),
+    source: str | None = None,
+    width_ratios: tuple[float, float] = (2.1, 1.0),
+):
+    """Open a path pane and a rank pane. The caller plots the data.
+
+    Same chrome contract as ``figure()``: headline, deck, and source are
+    recorded for ``save()``, and both axes are framed. ``path_label`` and
+    ``rank_label`` are pane names, not headlines.
+    """
+    import matplotlib.pyplot as plt
+
+    apply_adjacent_theme()
+    fig, axes = plt.subplots(
+        1,
+        2,
+        figsize=figsize,
+        sharey=False,
+        gridspec_kw={"width_ratios": list(width_ratios)},
+    )
+    path_ax, rank_ax = axes[0], axes[1]
+    _declare_chrome(
+        fig, (path_ax, rank_ax), headline=headline, deck=deck, source=source,
+    )
+    if path_label is not None:
+        pane_label(path_ax, path_label)
+    if rank_label is not None:
+        pane_label(rank_ax, rank_label)
+    return fig, path_ax, rank_ax
+
+
+def stack_figure(
+    *,
+    headline: str,
+    deck: str,
+    top_label: str | None = None,
+    bottom_label: str | None = None,
+    figsize: tuple[float, float] = (7.6, 5.8),
+    source: str | None = None,
+):
+    """Open two stacked panes that share one x axis. The caller plots.
+
+    The bottom pane keeps the x baseline. The top pane hides its x tick
+    labels and its bottom spine so the time axis is labeled once.
+    """
+    import matplotlib.pyplot as plt
+
+    apply_adjacent_theme()
+    fig, axes = plt.subplots(2, 1, figsize=figsize, sharex=True)
+    top_ax, bottom_ax = axes[0], axes[1]
+    _declare_chrome(
+        fig, (top_ax, bottom_ax), headline=headline, deck=deck, source=source,
+    )
+    # After frame(): one baseline, on the bottom pane only.
+    top_ax.tick_params(axis="x", labelbottom=False, length=0)
+    top_ax.spines["bottom"].set_visible(False)
+    if top_label is not None:
+        pane_label(top_ax, top_label)
+    if bottom_label is not None:
+        pane_label(bottom_ax, bottom_label)
+    return fig, top_ax, bottom_ax
 
 
 def _trim_number(value: float, decimals: int | None = None) -> str:
@@ -604,50 +716,109 @@ def event_markers(
     rule: bool = True,
     wrap: int = 14,
 ) -> Any:
-    """Mark dated events with a full-height rule and a bold label.
+    """Mark one dated event with a full-height rule and a short label.
 
-    ``events`` holds ``(x, label)`` pairs, or ``(x, label, y)`` to also drop
-    a filled dot on the series where the event landed. The rule is a solid
-    ink line across the plot and the label is bold ink at the top - an event
-    is part of the story, not chart furniture, so it is not whispered in the
-    meta tier.
+    ``events`` is a single ``(x, label)`` pair, or ``(x, label, y)`` to also
+    drop a filled dot on the series. A chart takes one event mark. The label
+    is at most four words on one line, with no arrow. Pass ``""`` or
+    ``None`` for a silent rule (the rule is drawn, no text).
 
     Pass ``rule=False`` on a dense chart to get a short tick at the baseline
-    instead of a line through the data.
+    instead of a line through the data. ``wrap`` is ignored: the label stays
+    on one line.
     """
-    import textwrap
+    if len(events) != 1:
+        raise ValueError("a chart takes one event mark")
+    event = events[0]
+    x = event[0]
+    raw = event[1]
+    y = event[2] if len(event) > 2 else None
+    if raw is None or raw == "":
+        label = None
+    else:
+        label = _short_label(raw, "event label")
 
-    for event in events:
-        x, label = event[0], event[1]
-        y = event[2] if len(event) > 2 else None
-        if rule:
-            ax.axvline(x, color=PALETTE["ink"], linewidth=0.9, zorder=4)
-        else:
-            ax.plot(
-                [x],
-                [0],
-                marker="|",
-                markersize=9,
-                color=PALETTE["ink"],
-                transform=ax.get_xaxis_transform(),
-                clip_on=False,
-                zorder=4,
-            )
-        if y is not None:
-            ax.plot([x], [y], marker="o", markersize=5, color=PALETTE["ink"], zorder=5)
+    if rule:
+        ax.axvline(x, color=PALETTE["ink"], linewidth=0.9, zorder=4)
+    else:
+        ax.plot(
+            [x],
+            [0],
+            marker="|",
+            markersize=9,
+            color=PALETTE["ink"],
+            transform=ax.get_xaxis_transform(),
+            clip_on=False,
+            zorder=4,
+        )
+    if y is not None:
+        ax.plot([x], [y], marker="o", markersize=5, color=PALETTE["ink"], zorder=5)
+    if label is not None:
+        # A late event sits near the right edge. Putting the label to the
+        # right of the rule spills into the next pane on a path-and-rank chart.
+        try:
+            xn = float(x)
+        except (TypeError, ValueError):
+            import matplotlib.dates as mdates
+
+            xn = float(mdates.date2num(x))
+        x0, x1 = ax.get_xlim()
+        late = x1 > x0 and x0 <= xn <= x1 and (xn - x0) / (x1 - x0) > 0.72
         ax.annotate(
-            "\n".join(textwrap.wrap(label, wrap)),
+            label,
             xy=(x, 1.0),
             xycoords=("data", "axes fraction"),
-            xytext=(5, -3),
+            xytext=(-5 if late else 5, -3),
             textcoords="offset points",
-            ha="left",
+            ha="right" if late else "left",
             va="top",
             fontsize=9,
             fontweight="bold",
             color=PALETTE["ink"],
             family=FONTS["main"],
+            clip_on=False,
         )
+    return ax
+
+
+_DELTA_TAG_RE = re.compile(r"^[+-]\d+(\.\d+)?(%|pt)$")
+
+
+def delta_tag(ax, x, y, text: str, *, color: str | None = None) -> Any:
+    """Stamp a signed move just above a point. No arrow, no leader, no sentence.
+
+    ``text`` must be a signed number with a ``%`` or ``pt`` suffix, such as
+    ``+17.7%`` or ``-30pt``. Words, dates, spaces, and unsigned numbers are
+    rejected before anything is drawn.
+    """
+    if not isinstance(text, str) or _DELTA_TAG_RE.fullmatch(text.strip()) is None:
+        raise ValueError("delta tag must be a signed number ending in % or pt")
+    ax.annotate(
+        text.strip(),
+        xy=(x, y),
+        xytext=(0, 6),
+        textcoords="offset points",
+        color=color or LINE,
+        fontsize=9,
+        fontweight="bold",
+        family=FONTS["mono"],
+        ha="center",
+        va="bottom",
+        clip_on=False,
+    )
+    return ax
+
+
+def highlight_window(ax, x0, x1, *, color: str | None = None) -> Any:
+    """Mark a quiet window with a span. No text."""
+    ax.axvspan(
+        x0,
+        x1,
+        color=color or PALETTE["mustard"],
+        alpha=0.16,
+        linewidth=0,
+        zorder=0,
+    )
     return ax
 
 
@@ -678,6 +849,80 @@ def bar_labels(ax, bars, values, fmt=str, *, color: str | None = None) -> Any:
     ax.set_ylim(
         lo - span * 0.10 if any(v < 0 for v in values) else lo,
         hi + span * 0.08 if any(v >= 0 for v in values) else hi,
+    )
+    return ax
+
+
+def _rank_value(value: float) -> str:
+    """Thousands separator, no unit, no percent scaling.
+
+    Integers print without decimals. Other values at magnitude 1 or
+    above print with one decimal. A value between -1 and 1 prints as
+    given.
+    """
+    if abs(value - round(value)) < 1e-9:
+        return f"{round(value):,d}"
+    if abs(value) < 1:
+        return f"{value:.6f}".rstrip("0").rstrip(".")
+    return f"{value:,.1f}"
+
+
+def rank_bars(ax, labels, values, *, colors=None, fmt=None) -> Any:
+    """Horizontal rank bars. The first label sits at the top.
+
+    Every bar uses ``LINE`` unless ``colors`` gives one color per bar.
+    The value sits just past the bar end, in mono. Category names sit on
+    the y axis in the main face, left aligned. No vertical grid, and the
+    horizontal grid is turned off so the bars are not striped.
+    """
+    labels = list(labels)
+    values = list(values)
+    if not labels or not values or len(labels) != len(values):
+        raise ValueError("rank_bars labels and values must be the same non-empty length")
+    formatter = fmt or _rank_value
+    rendered = [str(formatter(value)) for value in values]
+    ys = list(range(len(labels)))
+    bar_color = LINE if colors is None else colors
+    ax.barh(ys, values, color=bar_color, edgecolor="none", zorder=3)
+    for y, value, text in zip(ys, values, rendered):
+        positive = float(value) >= 0
+        ax.annotate(
+            text,
+            xy=(float(value), y),
+            xytext=(5 if positive else -5, 0),
+            textcoords="offset points",
+            ha="left" if positive else "right",
+            va="center",
+            fontsize=9,
+            color=PALETTE["fg-2"],
+            family=FONTS["mono"],
+            clip_on=False,
+        )
+    ax.set_yticks(ys)
+    ax.set_yticklabels(labels)
+    # Left-align the names outside the bars. The pad matches the longest
+    # label so the shared left edge ends at the spine instead of inside the plot.
+    tick_size = 10
+    longest = max(len(str(label)) for label in labels)
+    ax.tick_params(axis="y", pad=longest * 0.52 * tick_size + 8)
+    for tick in ax.get_yticklabels():
+        tick.set_fontfamily(FONTS["main"])
+        tick.set_fontsize(tick_size)
+        tick.set_ha("left")
+        tick._adjacent_face = "main"  # noqa: SLF001 - save() keeps this face
+    ax.invert_yaxis()
+    ax.grid(axis="y", visible=False)
+    lo, hi = ax.get_xlim()
+    span = hi - lo
+    if span <= 0:
+        span = 1.0
+    chars = max(len(text) for text in rendered)
+    extra = span * (0.045 * chars + 0.06)
+    has_neg = any(float(value) < 0 for value in values)
+    has_pos = any(float(value) >= 0 for value in values)
+    ax.set_xlim(
+        lo - (extra if has_neg else 0.0),
+        hi + (extra if has_pos else 0.0),
     )
     return ax
 
@@ -1383,10 +1628,15 @@ def small_multiples(
 
 
 def _style_ticklabels(fig) -> None:
-    """Render every tick label in the mono stack, upright, tabular."""
+    """Render numeric tick labels in the mono stack, upright, tabular.
+
+    Category labels marked by ``rank_bars`` keep the main face.
+    """
     mono = FONTS["mono"]
     for ax in fig.axes:
         for lbl in (*ax.get_xticklabels(), *ax.get_yticklabels()):
+            if getattr(lbl, "_adjacent_face", None) == "main":
+                continue
             lbl.set_fontfamily(mono)
             lbl.set_fontstyle("normal")
 

@@ -1,7 +1,7 @@
 ---
 name: adjacent-chart-style
 description: Use when rendering or publishing any chart (PNG, SVG, Plotly, Datawrapper, matplotlib, or seaborn) for Adjacent output.
-version: 1.1.0
+version: 1.2.0
 category: data-science
 allowed-tools:
   - Bash
@@ -72,6 +72,8 @@ sentence that states the finding, carries the Adjacent surface and
 palette, and credits the source bottom-left (`Source: Adjacent`). If it
 reads as a library default - centered label-style title, boxed legend,
 grid on every axis, unit repeated down the y axis - it is wrong.
+A 0-100 probability axis may print the percent sign on each round tick.
+That is the only repeat.
 
 ## Structure
 
@@ -82,14 +84,20 @@ nothing is ever hand-placed:
 | Band | Type | Content |
 | --- | --- | --- |
 | headline | Inter bold, 16pt, `ink` | the finding as a sentence, sentence case, wraps |
-| deck | serif, 11pt, `fg-2` | the series identifier, usually one word: `RED` |
+| deck | serif, 11pt, `fg-2` | one factual line: venue, contract, unit |
 | plot | - | the data |
 | source | Inter 8.5pt, `fg-3` | `Source: Adjacent YYYY-MM-DD HH:MM UTC`, bottom-left, no rule |
 
-**Two lines of text, and nothing else.** Anything a reader can infer
-from the axes stays off the chart: the timeframe, the pricing basis,
-the word "index", a desk kicker, a wordmark. A deck reading
-`RED · index membership, 1-hour mid` should read `RED`.
+The headline states the finding, with the number, and it can carry the
+cause. The deck is one factual line: venue, contract, and unit. It is
+one line, not a paragraph, and it is not a basis clause in the source
+credit. A short identifier such as `UPFI` is still valid. A fuller deck
+names the venue, the contract, and the unit. Example: `Kalshi copper
+close on 2026-10-30, odds above each strike (USD/lb)`.
+
+Timeframe, the word "index", and a pricing-basis clause stay off the
+source line. Cause and method that do not fit the headline or the deck
+go in the message under the image, not on the chart.
 
 The headline is the single most important brand decision. Write what
 the data shows, not what the chart contains:
@@ -117,8 +125,9 @@ No wordmark beside it - `Source: Adjacent` already says who made it,
 and printing `ADJACENT` next to it says the same thing twice. No
 divider rule above it - that is a line the eye has to cross for
 nothing. No basis clause: `Adjacent, mid-quote` reads as a two-part
-publisher name, and the pricing basis is not a source. State the basis
-in the prose beside the chart if it matters.
+publisher name, and the pricing basis is not a source. Do not put
+`mid-quote` in the source credit. State the basis in the message under
+the image if it matters.
 
 For another dataset use `Source: <publisher>`. `save()` stamps it
 automatically; `source_line(fig, text)` overrides it.
@@ -137,10 +146,11 @@ horizontal gridlines and the x baseline are the whole frame.
 - No left spine, no y tick marks. The x baseline is a solid rule with
   small outward tick marks.
 - At most five gridlines. A dense axis reads as a spreadsheet.
-- **Unit on the top tick only.** `adj.y_axis(ax, kind)` prints `7.5%`
-  or `$1.2M` on the topmost tick and leaves the rest bare, so the axis
-  reads as a column of numbers. `kind` is `percent` (values are 0-1
-  fractions), `currency`, `number`, or `level`.
+- **Unit on the top tick only**, except a 0-100 probability axis, which
+  may print the percent sign on each round tick. `adj.y_axis(ax, kind)`
+  prints `7.5%` or `$1.2M` on the topmost tick and leaves the rest bare,
+  so the axis reads as a column of numbers. `kind` is `percent` (values
+  are 0-1 fractions), `currency`, `number`, or `level`.
 - No y-axis title when the deck already states the unit. `Rebased
   level` above `100 / 105 / 110` is redundant.
 - `adj.format_date_axis(ax)` for any datetime x axis: concise labels,
@@ -155,10 +165,10 @@ horizontal gridlines and the x baseline are the whole frame.
 puts filled squares under the deck, in the header where the reader
 already is. It never covers data and it cannot be clipped.
 
-`adj.series_label(ax, x_last, y_last, "Direct", color)` writes the name
-on the line's right end. Use it when a legend would be ambiguous -
-lines that cross repeatedly, or one series that needs calling out. A
-matplotlib legend inside the plot is a last resort; it covers data.
+`adj.end_label` or `adj.series_label` puts the latest number at the
+right, in the series color. Names belong in `swatch_legend`. Do not put
+words inside the plot, and do not place a matplotlib legend over the
+data.
 
 Value callouts:
 
@@ -223,24 +233,77 @@ adj.save(fig, "ladder.png")
 # Also print a bullet list of the same numbers in the message body.
 ```
 
-## Events
+## Layouts
 
-Mark a dated event with a full-height vertical rule and a bold label at
-the top:
+Open every chart the way `figure()` does, so `save()` draws the
+headline, the deck, and the source line. A new chart uses one of these
+three. Do not invent a fourth.
+
+**Path.** The existing `figure()`. One to six lines. `swatch_legend`
+names them. `end_label` or `series_label` puts the latest number at the
+right, in the series color. No words inside the plot.
+
+**Path and rank.** `path_and_rank(headline, deck, path_label=None, rank_label=None, figsize=(10.4, 4.8), source=None, width_ratios=(2.1, 1.0))`
+returns `(fig, path_ax, rank_ax)`. The left pane is the path. The right
+pane is a horizontal bar ranking from `rank_bars(ax, labels, values, colors=None, fmt=None)`.
+`pane_label` names a pane when the two sides use different units. A pane
+label is optional and at most four words, for example `Odds over time`
+or `Current odds`. It is not a y-axis title.
+
+`rank_bars` does not guess percent. Pass `fmt` when the values need a
+`%` sign. The default bar color is the lone-series deep green. Pass
+`colors` for a signed or focus treatment using `UP`, `DOWN`, or `SERIES`.
+
+**Stack.** `stack_figure(headline, deck, top_label=None, bottom_label=None, figsize=(7.6, 5.8), source=None)`
+returns `(fig, top_ax, bottom_ax)`. Two rows share time and use
+different units. This is not a dual y axis. The top row is the level.
+The bottom row is the flow, volume, or contribution. `top_label` and
+`bottom_label` follow the same rule as `pane_label`: optional, at most
+four words, and not a y-axis title. `highlight_window(ax, x0, x1)` marks
+a window with a quiet mustard wash and no text.
+
+### Annotation budget
+
+The same budget applies to path, path and rank, and stack.
+
+- The headline is the finding, with the number, and it can carry the cause.
+- The deck is one factual line: venue, contract, unit. It is not a paragraph, and it is not a basis clause in the source credit.
+- Plot text is the latest number, in the series color.
+- One event mark per chart. See Events.
+- `delta_tag(ax, x, y, text)` is a number only. See Events.
+- Cause and method that do not fit the headline or the one-line deck go in the message under the image, not on the chart.
+- A 0-100 probability axis may print the percent sign on each round tick. Other charts keep the unit on the top tick only.
 
 ```python
-adj.event_markers(ax, [
-    (t_vote, "Cloture vote fails", level_at_vote),
-    (t_call, "Runoff called", level_at_call),
-])
+fig, path_ax, rank_ax = adj.path_and_rank(
+    headline="Odds copper closes above $6.75 rose to 57%",
+    deck="Kalshi copper close on 2026-10-30, odds above each strike (USD/lb)",
+    path_label="Odds over time",
+    rank_label="Current odds",
+)
+adj.rank_bars(rank_ax, labels, values, colors=colors, fmt=lambda v: f"{round(100 * v)}%")
+adj.save(fig, "copper-strikes.png")
 ```
 
-The rule is a solid ink line across the plot and the label is bold ink,
-wrapped short. An event is part of the story, so it is not whispered in
-the meta tier. Pass a third value per event to also drop a filled dot
-on the series where the event landed. On a dense chart pass
-`rule=False` for a short tick at the baseline instead of a line through
-the data.
+## Events
+
+One event mark per chart. `event_markers` takes exactly one event. The
+label is optional. A non-empty label is at most four words, sits on the
+vertical ink rule, and has no arrow. A longer label raises `ValueError`.
+
+```python
+adj.event_markers(ax, [(t_vote, "Cloture vote fails")])
+```
+
+`delta_tag(ax, x, y, text)` is a number only, matching `+17.7%` or
+`-30pt`. No date, no words, no arrow. Anything else raises `ValueError`.
+
+`highlight_window(ax, x0, x1)` marks a window with a quiet mustard wash
+and no text. Use it when the window is the point, including on the
+bottom row of a stack.
+
+Cause and method that do not fit the headline or the one-line deck go
+in the message under the image, not on the chart.
 
 ## Chart forms
 
@@ -248,6 +311,8 @@ the data.
 | --- | --- | --- |
 | area | one index or price series | `adj.area_series(...)` (default deep green) |
 | line | two or three series compared | `ax.plot` + `adj.series_label` or `adj.swatch_legend` |
+| path and rank | a time path beside a current ranking | `adj.path_and_rank` + `adj.rank_bars` |
+| stack | level over a flow, shared time, different units | `adj.stack_figure` |
 | step | changes only at discrete events | `ax.plot(..., drawstyle="steps-post")` |
 | diverging bars | movers scans, gain/loss (few categories) | `ax.bar` with `UP`/`DOWN` + `adj.bar_labels` |
 | horizontal ladder | ranked levels, many categories, chat delivery | `ax.barh` + large y labels + text bullet fallback |
@@ -363,7 +428,7 @@ Never name a font directly in chart code; use `adj.FONTS["main"]`,
 Conventions:
 
 - Headline: Inter, bold, left-aligned, `--comp-ink`. No em-dash, no emoji.
-- Deck: serif, regular, `--fg-2`. The identifier, usually one word.
+- Deck: serif, regular, `--fg-2`. One factual line: venue, contract, unit.
 - Tick labels + data callouts: mono, tabular, `--comp-ink`.
 - Source credit: Inter, 8.5px, `--fg-3`, bottom-left of the figure.
 
@@ -380,7 +445,8 @@ Axis ticks and stated values follow different rules. Ticks stay as
 narrow as possible; stated values keep their precision.
 
 - **Axis ticks**: `adj.y_axis(ax, kind)`. Trailing zeros trimmed, unit
-  on the top tick only: `7.5%`, `5`, `2.5`, `0`.
+  on the top tick only: `7.5%`, `5`, `2.5`, `0`. A 0-100 probability
+  axis may print the percent sign on each round tick.
 - **Stated values** (callouts, pills, prose, tables): two decimals with
   the unit - `+5.73%`, `$1.2M`, `96.35`. Never `pp`.
 - Percent inputs are 0-1 fractions everywhere. `0.0573` is 5.73%.
@@ -479,7 +545,7 @@ same brand in the metadata PATCH:
 - Title font: Inter; data labels: the `--font-mono` generic.
 - Axis and grid lines: `#d6d2c8` / `#ecebea`.
 - Series colors: the `SERIES` hex list above.
-- Headline: the finding as a sentence. Identifier goes in the intro.
+- Headline: the finding as a sentence. The intro is one factual line: venue, contract, unit.
 - Source line: `Source: Adjacent`. No wordmark, no basis clause.
 - Number format: `0.00%` for percent series; `$` prefix for currency.
 - No emojis, no `pp`, no em-dash in title or intro. The `conventions`
@@ -496,9 +562,13 @@ same brand in the metadata PATCH:
 - A chart without a source line when it is being published or shown to
   a user.
 - A label-style headline (`RED index, 30 days`) where the finding
-  belongs. The identifier goes in the deck.
-- Vertical gridlines, a left spine, a dual y axis, a pie chart, or the
-  unit repeated on every y tick.
+  belongs. The deck is one factual line: venue, contract, unit.
+- More than one event, an event label longer than four words, an arrow
+  on an event or a delta tag, or a delta tag that is not a number
+  (`+17.7%` or `-30pt`).
+- Vertical gridlines, a left spine, a dual y axis (a stack is two rows,
+  not a dual axis), a pie chart, or the unit repeated on every y tick.
+  A 0-100 probability axis may print the percent sign on each round tick.
 - A wordmark, a footer divider rule, or a basis clause in the source.
 - A white panel or any plot background other than the beige canvas.
 - The floating offset date beside the x axis.

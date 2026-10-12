@@ -125,6 +125,85 @@ def test_saved_png_exists_and_is_nontrivial(tmp_path):
     )
 
 
+def test_path_and_rank_chrome_and_rank_labels(tmp_path):
+    import matplotlib.colors as mcolors
+
+    adj = _load_helper()
+    headline = "Path leads and the book ranks behind"
+    fig, path_ax, rank_ax = adj.path_and_rank(
+        headline=headline,
+        deck="Kalshi, senate, mid",
+        path_label="Price path",
+        rank_label="Book rank",
+    )
+    canvas = adj.PALETTE["canvas"]
+    assert mcolors.to_hex(path_ax.get_facecolor()) == canvas
+    assert mcolors.to_hex(rank_ax.get_facecolor()) == canvas
+    adj.rank_bars(rank_ax, ["Yes", "No", "Other"], [1200, 48, -3.2])
+    assert {t.get_text() for t in rank_ax.texts} == {"1,200", "48", "-3.2"}
+    adj.save(fig, str(tmp_path / "path-rank.png"))
+    assert any(t.get_text() == headline for t in fig.texts)
+    source_texts = [
+        t.get_text()
+        for t in fig.texts
+        if t.get_text().startswith("Source: Adjacent")
+    ]
+    assert source_texts, "no Source: Adjacent footer text rendered"
+    assert _SOURCE_RE.fullmatch(source_texts[0]), source_texts[0]
+
+
+def test_stack_figure_and_highlight_window():
+    from matplotlib.collections import PolyCollection
+    from matplotlib.patches import Polygon, Rectangle
+
+    adj = _load_helper()
+    _fig, top, bottom = adj.stack_figure(
+        headline="Two panes share one clock",
+        deck="Kalshi, crude, mid",
+        top_label="Front month",
+        bottom_label="Back month",
+    )
+    assert top is not bottom
+    assert top.figure is bottom.figure
+    assert bottom.spines["bottom"].get_visible() is True
+    assert top.spines["bottom"].get_visible() is False
+    adj.highlight_window(top, 1, 4)
+    # axvspan is a Rectangle on matplotlib 3.11 and has been a Polygon.
+    # Accept a PolyCollection too, in case a host builds the span that way.
+    spans = [
+        artist
+        for artist in (*top.collections, *top.patches)
+        if isinstance(artist, (PolyCollection, Polygon, Rectangle))
+    ]
+    assert spans, "highlight_window did not add a span"
+
+
+def test_delta_tag_is_a_bare_annotation():
+    adj = _load_helper()
+    _fig, ax = adj.figure(headline="Move tag stays numeric", deck="Kalshi, crude, mid")
+    adj.delta_tag(ax, 1, 2, "+36.8%")
+    tags = [t for t in ax.texts if t.get_text() == "+36.8%"]
+    assert len(tags) == 1
+    assert tags[0].arrowprops is None
+
+
+def test_late_event_label_stays_inside_the_axes():
+    """A mark near the right edge labels to its left, so a rank pane stays clear."""
+    adj = _load_helper()
+    _fig, axes = adj.figure(
+        headline="Event label stays in the pane",
+        deck="TEST",
+        panels=(1, 2),
+    )
+    early, late = axes[0, 0], axes[0, 1]
+    early.plot([0, 10], [1, 1])
+    late.plot([0, 10], [1, 1])
+    adj.event_markers(early, [(1, "Early mark here")])
+    adj.event_markers(late, [(9, "Late mark here")])
+    assert early.texts[0].get_ha() == "left"
+    assert late.texts[0].get_ha() == "right"
+
+
 # -------------------------------------------------------------------
 # Font bundling wiring
 # -------------------------------------------------------------------
